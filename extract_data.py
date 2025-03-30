@@ -10,20 +10,34 @@ class InvoiceData:
         self.items:list[LineData] = []
         self.raw_lines:list[str] = []
 
-        self._read_invoice(path)
+        image = self._image_preprocess(path)
+        self._read_invoice(image)
         item_lines = self._get_item_lines()
         self._process_items(item_lines)
 
         self._extract_total()
 
-    def _read_invoice(self, path:str):
-        """
-        Extracts text from the invoice in the provided path
+    def _image_preprocess(self, path:str) -> cv2.typing.MatLike:
+        image = cv2.imread(path)
+        # graycsaling the image
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # thresholding -> making it black and white
+        _, bw = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
 
-        @param path: path to the invoice
+        return image 
+        return bw
+        cv2.imwrite("test_invoices/split_image/bw.png", bw)
+
+
+    def _read_invoice(self, img:cv2.typing.MatLike):
+        """
+        Extracts text from the provided invoice image
+
+        @param img: invoice image
         """
 
-        text_raw:str = pytesseract.image_to_string(path)
+        tesseract_config = r'--psm 6'
+        text_raw:str = pytesseract.image_to_string(img, config=tesseract_config)
     
         lines = [line.strip() for line in text_raw.split("\n")]
 
@@ -217,14 +231,14 @@ def main():
     print(total_price)
 
 
-def image_cut():
-    # Example usage
-    image_path = "test_invoices/16000333892025031436070 (1).png"  # Replace with your image path
-    sections = split_invoice_by_text_lines(image_path)
+# def image_cut():
+#     # Example usage
+#     image_path = "test_invoices/16000333892025031436070 (1).png"  # Replace with your image path
+#     sections = split_invoice_by_text_lines(image_path)
 
-    # Save or display the sections
-    for idx, sec in enumerate(sections):
-        cv2.imwrite(f"test_invoices/split_image/section_{idx}.png", sec)
+#     # Save or display the sections
+#     for idx, sec in enumerate(sections):
+#         cv2.imwrite(f"test_invoices/split_image/section_{idx}.png", sec)
     
 if __name__ == "__main__":
 
@@ -238,10 +252,24 @@ if __name__ == "__main__":
         "test_invoices/16000335892025032735441.png"
     ]
 
+
+
     for inv_path in invoice_paths:
+        # image = cv2.imread(inv_path)
+        # graycsaling the image
+        # gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # thresholding -> making it black and white
+        # _, bw = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
+
+        # cv2.imwrite(f"test_invoices/split_image/{inv_path.split("/")[1]}", bw)
 
         invoice = InvoiceData(inv_path)
 
         print(invoice.to_json())
+
+
+        # custom_config = r'--psm 6'
+        # text_raw:str = pytesseract.image_to_string(inv_path, config=custom_config)
+        # print(text_raw)
     
 
