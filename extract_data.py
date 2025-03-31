@@ -3,6 +3,13 @@ import cv2
 import numpy as np
 import json
 
+# max 'left' value for a line to be considered not indented
+LINE_START_LIMIT = 100
+# treshold for max difference in 'top' value of words in the same line
+LINE_TOP_TRESHOLD = 10
+# min 'left' value for a word to be considered as a price
+PRICE_LEFT_MIN_BOUNDARY = 720
+
 class InvoiceData:
     __slots__ = ["raw_lines", "items", "total"]
 
@@ -37,7 +44,7 @@ class InvoiceData:
         """
 
         tesseract_config = r'--psm 6'
-        text_raw:str = pytesseract.image_to_string(img, config=tesseract_config)
+        text_raw:str = pytesseract.image_to_string(img, lang="hun", config=tesseract_config)
     
         lines = [line.strip() for line in text_raw.split("\n")]
 
@@ -230,6 +237,68 @@ def main():
             # print(data)
     print(total_price)
 
+class ExtractedWord:
+    def __init__(self, text:str, left:int, top:int, width:int, height:int):
+        self.text = text
+        self.left = left
+        self.top = top
+        self.width = width
+        self.height = height
+
+class Line:
+    def __init__(self, line_num:int):
+        self.line_num = line_num
+        self.words:list[ExtractedWord] = []
+
+    def __str__(self):
+        texts = [word.text for word in self.words]
+        return " ".join(texts)
+    
+    @property
+    def line_start(self):
+        return min([word.left for word in self.words])
+    
+    def add_word(self, word:ExtractedWord):
+        self.words.append(word)
+
+def process_dict(raw_data:dict):
+    words = []
+    for i in range(len(raw_data["text"])):
+        if raw_data["text"][i] == "":
+            continue
+        
+        word = ExtractedWord(
+            raw_data["text"][i],
+            raw_data["left"][i],
+            raw_data["top"][i],
+            raw_data["width"][i],
+            raw_data["height"][i]
+        )
+
+        words.append(word)
+    
+    return words
+
+def group_into_line(words:list[ExtractedWord]):
+    lines:list[Line] = []
+
+    line_num = 0
+
+    line = Line(line_num)
+    line.add_word(words[0])
+
+    for i in range(1, len(words), 1):
+        if abs(words[i].top - words[i-1].top) > LINE_TOP_TRESHOLD:
+            lines.append(line)
+            line_num += 1
+            line = Line(line_num)
+        
+        line.add_word(words[i])
+    lines.append(line)
+
+    return lines
+
+
 
 # def image_cut():
 #     # Example usage
@@ -246,10 +315,10 @@ if __name__ == "__main__":
     # main()
 
     invoice_paths = [
-        "test_invoices/16000333862025032623918.png",  
-        "test_invoices/16000335892025032535080.png",
+        # "test_invoices/16000333862025032623918.png",  
+        # "test_invoices/16000335892025032535080.png",
         "test_invoices/16000333892025031436070 (1).png",
-        "test_invoices/16000335892025032735441.png"
+        # "test_invoices/16000335892025032735441.png"
     ]
 
 
@@ -263,13 +332,21 @@ if __name__ == "__main__":
 
         # cv2.imwrite(f"test_invoices/split_image/{inv_path.split("/")[1]}", bw)
 
-        invoice = InvoiceData(inv_path)
+        # invoice = InvoiceData(inv_path)
 
-        print(invoice.to_json())
+        # print(invoice.to_json())
 
 
-        # custom_config = r'--psm 6'
-        # text_raw:str = pytesseract.image_to_string(inv_path, config=custom_config)
+        custom_config = r'--psm 6'
+        text_raw:str = pytesseract.image_to_data(inv_path, lang="hun", config=custom_config)
+
+        data_raw:str = pytesseract.image_to_data(inv_path, lang="hun", output_type=pytesseract.Output.DICT ,config=custom_config)
+
+        extracted_words = process_dict(data_raw)
+        lines = group_into_line(extracted_words)
+
+        for line in lines:
+            print(line)
         # print(text_raw)
     
 
