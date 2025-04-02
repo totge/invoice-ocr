@@ -351,7 +351,13 @@ class Line:
 
         bisect.insort_right(self.words, word, key=lambda x: x.left)
 
-    
+    def is_position_occupied(self, position:int):
+        for word in self.words:
+            if word.left <= position <= word.right:
+                return True
+            
+        return False
+
 
 class Item:
     __slots__ = ["line_num", "name", "full_price", "discount", "raw_text"]
@@ -426,6 +432,7 @@ class Invoice:
         # data processing steps to build up the object
         self._extract_words()
         self._build_lines()
+        self._clean_lines()
         self._extract_order_items()
 
         # extracting additional data from the invoice
@@ -479,6 +486,30 @@ class Invoice:
 
         return upper_boundary, lower_boundary
     
+    # TODO: maybe also need a rule, if the word to delete is longer than 1-2 then keep it
+    def _clean_lines(self):
+        top_limit, bottom_limit = self._get_order_items_area()
+
+        for line in self._lines:
+            # check if line is in orders area
+            if line.line_top < top_limit or line.line_bottom > bottom_limit:
+                continue
+            
+            # check is line is not indented
+            if line.line_start > LINE_START_LIMIT:
+                continue
+            
+            sus_word_idx = []
+            for i, word in enumerate(line.words):
+                if abs(word.top - line.avg_line_top) > 5:
+                    sus_word_idx.append(i)
+
+            for idx in sus_word_idx:
+                tested_word = line.words.pop(idx)
+                if not line.is_position_occupied(tested_word.left):
+                    line.add_word(tested_word)
+                    
+
     def _extract_order_items(self):
         top_limit, bottom_limit = self._get_order_items_area()
 
@@ -651,6 +682,7 @@ if __name__ == "__main__":
         invoice = Invoice(data_dict)
 
         print(invoice.to_json())
+        # invoice._clean_lines()
         
         
     
