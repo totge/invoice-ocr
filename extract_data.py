@@ -379,59 +379,8 @@ class Invoice:
         
         return self.invoice_date.strftime("%Y-%m-%d %H:%M:%S")
 
-
-def process_dict(raw_data:dict):
-    words = []
-    for i in range(len(raw_data["text"])):
-        if raw_data["text"][i] == "":
-            continue
-        
-        word = ExtractedWord(
-            raw_data["text"][i],
-            raw_data["left"][i],
-            raw_data["top"][i],
-            raw_data["width"][i],
-            raw_data["height"][i]
-        )
-
-        words.append(word)
-    
-    return words
-
-def group_into_line(words:list[ExtractedWord]):
-    lines:list[Line] = []
-
-    line_num = 0
-
-    line = Line(line_num)
-    line.add_word(words[0])
-
-    for i in range(1, len(words), 1):
-        if abs(words[i].top - words[i-1].top) > LINE_TOP_TRESHOLD:
-            lines.append(line)
-            line_num += 1
-            line = Line(line_num)
-        
-        line.add_word(words[i])
-    lines.append(line)
-
-    return lines
-
-
-
-# def image_cut():
-#     # Example usage
-#     image_path = "test_invoices/16000333892025031436070 (1).png"  # Replace with your image path
-#     sections = split_invoice_by_text_lines(image_path)
-
-#     # Save or display the sections
-#     for idx, sec in enumerate(sections):
-#         cv2.imwrite(f"test_invoices/split_image/section_{idx}.png", sec)
     
 if __name__ == "__main__":
-
-    # image_cut()
-    # main()
 
     invoice_paths = [
         "test_invoices/16000333862025032623918.png",  
