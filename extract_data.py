@@ -1,16 +1,18 @@
 import pytesseract
 import cv2
-import numpy as np
 import json
 import re
 import bisect
+from datetime import datetime
 
 # max 'left' value for a line to be considered not indented
 LINE_START_LIMIT = 100
 # treshold for max difference in 'top' value of words in the same line
 LINE_TOP_TRESHOLD = 15
-# min 'left' value for a word to be considered as a price
-PRICE_LEFT_MIN_BOUNDARY = 720
+# min 'left' value for a word to be considered as a part of the price
+PRICE_MIN_LEFT_BOUNDARY = 720
+# min 'left' value for a word to be considered as a part of the date
+DATE_MIN_LEFT_BOUNDARY = 620
 
 
 
@@ -149,7 +151,7 @@ class Line:
 
         # we don't include the trailing VAT type indicator
         for word in self.words[:-1]:
-            if word.left < PRICE_LEFT_MIN_BOUNDARY:
+            if word.left < PRICE_MIN_LEFT_BOUNDARY:
                 name_parts.append(word.text)
             else:
                 # only extract numeric characters from price text parts
@@ -188,7 +190,7 @@ class Item:
         
 
 class Invoice:
-    __slots__ = ["raw_data", "_words", "_lines", "order_items", "invoice_total"]
+    __slots__ = ["raw_data", "_words", "_lines", "order_items", "invoice_total", "invoice_date"]
     def __init__(self, raw_data:dict):
         """
         Provides a high level object to access information from an invoice
@@ -208,6 +210,7 @@ class Invoice:
 
         # extracting additional data from the invoice
         self.invoice_total = self._extract_total()
+        self.invoice_date = self._extract_date()
     
     def _extract_words(self):
         for i in range(len(self.raw_data["text"])):
@@ -308,13 +311,39 @@ class Invoice:
             self.order_items.append(item)
 
     def _extract_total(self) -> int:
+        # this sets it to None in case 'fizetend' pattern is not matched
         price = None
 
         for line in self._lines:
             if "fizetend" in line.text.lower():
-                price = line.extract_item_data()
+                _, price = line.extract_item_data()
         
         return price
+    
+    def _extract_date(self) -> datetime|None:
+        _, bottom_limit = self._get_order_items_area()
+        date_string_parts:list[str] = []
+
+        for line in self._lines:
+            if line.line_top < bottom_limit: continue
+
+            if "tid" in line.text.lower():
+                for word in line.words:
+                    if word.left > DATE_MIN_LEFT_BOUNDARY:
+                        date_string_parts.append(word.text)
+
+        # Define the format that matches your date strings
+        date_format = "%Y.%m.%d %H:%M"
+        date_string = " ".join(date_string_parts)
+
+        try:
+            # Convert to datetime objects
+            date = datetime.strptime(date_string, date_format)
+        except:
+            date = None
+        
+        return date
+
     
     # TODO: it feels not too robust
     def _apply_discount_on_item(self, discount_line:Line):
@@ -333,7 +362,7 @@ class Invoice:
 
         data = {
             # TODO: parse dat from the invoice
-            "datetime": "date",
+            "datetime": self.get_datetime_str(),
             "items": items,
             "parsed_total": self.invoice_total,
             "calculated_total": self.calculate_total()
@@ -343,6 +372,13 @@ class Invoice:
 
     def calculate_total(self) -> int:
         return sum([item.price for item in self.order_items])
+    
+    def get_datetime_str(self) -> str:
+        if self.invoice_date is None:
+            return "missing datetime"
+        
+        return self.invoice_date.strftime("%Y-%m-%d %H:%M:%S")
+
 
 def process_dict(raw_data:dict):
     words = []
@@ -441,7 +477,8 @@ if __name__ == "__main__":
         invoice = Invoice(data_dict)
 
         print(invoice.to_json())
-        # invoice._clean_lines()
+
+        # invoice._extract_date()
         
         
     
