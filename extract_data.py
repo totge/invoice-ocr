@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import json
 import re
+import bisect
 
 # max 'left' value for a line to be considered not indented
 LINE_START_LIMIT = 100
@@ -286,6 +287,12 @@ class ExtractedWord:
         self.top = top
         self.width = width
         self.height = height
+
+    def __str__(self):
+        return f"{self.text} at top: {self.top} left:{self.left}"
+    
+    def __repr__(self):
+        return f"{self.text} at top: {self.top} left:{self.left}"
     
     @property
     def bottom(self)->int:
@@ -321,8 +328,28 @@ class Line:
         word_text = [word.text for word in self.words]
         return " ".join(word_text)
     
+    @property
+    def avg_line_top(self) -> float:
+        if len(self.words) == 0:
+            return 0
+
+        sum_top = sum([word.top for word in self.words])
+        if len(self.words) < 3:
+            avg = sum_top / len(self.words)
+        else:
+            min_top = min([word.top for word in self.words])
+            max_top = max([word.top for word in self.words])
+            sum_corr = sum_top - min_top - max_top
+            avg = sum_corr / (len(self.words) - 2)
+        
+        return avg
+
     def add_word(self, word:ExtractedWord):
-        self.words.append(word)
+        if len(self.words) == 0:
+            self.words.append(word)
+            return
+
+        bisect.insort_right(self.words, word, key=lambda x: x.left)
 
     
 
@@ -418,6 +445,8 @@ class Invoice:
             )
 
             self._words.append(word)
+        
+        self._words.sort(key=lambda x: x.top)
     
     # TODO: refactor this because it is ugly
     def _build_lines(self):
@@ -427,7 +456,7 @@ class Invoice:
         line.add_word(self._words[0])
 
         for i in range(1, len(self._words), 1):
-            if abs(self._words[i].top - self._words[i-1].top) > LINE_TOP_TRESHOLD:
+            if abs(self._words[i].top - line.avg_line_top) > LINE_TOP_TRESHOLD:
                 self._lines.append(line)
                 line_num += 1
                 line = Line(line_num)
@@ -561,7 +590,7 @@ if __name__ == "__main__":
         "test_invoices/16000333862025032623918.png",  
         "test_invoices/16000335892025032535080.png",
         "test_invoices/16000333892025031436070 (1).png",
-        # "test_invoices/16000335892025032735441.png"
+        "test_invoices/16000335892025032735441.png"
     ]
 
 
@@ -579,10 +608,32 @@ if __name__ == "__main__":
 
         # print(invoice.to_json())
 
-        img = preprocess_image(inv_path)
-        custom_config = r'--psm 6'
-        text_raw:str = pytesseract.image_to_data(img, lang="eng", config=custom_config)
-        print(text_raw)
+##### Exploration
+        # img = preprocess_image(inv_path)
+        # custom_config = r'--psm 6'
+        # text_raw:str = pytesseract.image_to_data(img, lang="eng", config=custom_config)
+        # # print(text_raw)
+
+        # data_raw:str = pytesseract.image_to_data(img, lang="eng", output_type=pytesseract.Output.DICT, config=custom_config)
+
+        # seen_values = set()
+        # filtered_tops = [(top + data_raw["height"][i], data_raw["text"][i]) for i, top in enumerate(data_raw["top"]) if data_raw["text"][i] != ""] 
+        # sorted_values = sorted(filtered_tops, key=lambda x: x[0])
+        # prev_value = 0
+
+        # for i in range(len(filtered_tops)):
+        #     top = sorted_values[i]
+
+        #     if top[0] in seen_values:
+        #         continue
+                
+        #     print(top[0], f"+{top[0] - prev_value}", top[1])
+        #     seen_values.add(top[0])
+        #     prev_value = top[0]
+
+########## end exploration
+
+        # print(text_raw)
 
         # data_raw:str = pytesseract.image_to_data(inv_path, lang="eng", output_type=pytesseract.Output.DICT ,config=custom_config)
 
