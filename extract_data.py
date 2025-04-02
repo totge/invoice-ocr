@@ -134,24 +134,21 @@ class Line:
                 return True
             
         return False
-
-
-class Item:
-    __slots__ = ["line_num", "name", "full_price", "discount", "raw_text"]
-
-    # TODO: think about error handling here - what happens if the object creation fails
-    @classmethod
-    def from_line(cls, line:Line):
+    
+    def extract_item_data(self) -> tuple[str|None, int|None]:
         """
-        Creates a Item object from a Line object
-
-        @param line: Line object to create the Item from
+        It tries to parse the line and extract the order item name and price from it, if unsuccessful, it returns a None for both.
         """
 
         name_parts:list[str] = []
         price_parts:list[str] = []
+
+        # we expect at least 3 words in every order line: name, price, VAT type
+        if len(self.words) < 3:
+            return None, None
+
         # we don't include the trailing VAT type indicator
-        for word in line.words[:-1]:
+        for word in self.words[:-1]:
             if word.left < PRICE_LEFT_MIN_BOUNDARY:
                 name_parts.append(word.text)
             else:
@@ -163,15 +160,12 @@ class Item:
         try:
             item_price = int("".join(price_parts))
         except:
-            item_price = -1
+            return None,None
 
-        return cls(
-            line_num=line.line_num,
-            name=item_name,
-            full_price=item_price,
-            discount=0,
-            raw_text=line.text
-        )
+        return item_name, item_price
+
+class Item:
+    __slots__ = ["line_num", "name", "full_price", "discount", "raw_text"]
 
     # TODO: add documentation
     def __init__(self, line_num:int, name:str, full_price:int, discount:int, raw_text:str):
@@ -232,7 +226,6 @@ class Invoice:
         
         self._words.sort(key=lambda x: x.top)
     
-    # TODO: refactor this because it is ugly
     def _build_lines(self):
         line_num = 0
         line = Line(line_num)
@@ -292,41 +285,51 @@ class Invoice:
 
         for line in self._lines:
             # check if line is in orders area
-            if line.line_top < top_limit or line.line_bottom > bottom_limit:
-                continue
+            if line.line_top < top_limit or line.line_bottom > bottom_limit: continue
             
             # check is line is not indented
-            if line.line_start > LINE_START_LIMIT:
-                continue
+            if line.line_start > LINE_START_LIMIT: continue
             
             # disregard subtotal lines
             # TODO: make this more robust
-            if "reszosszeg" in line.text.lower():
-                continue
+            if "reszosszeg" in line.text.lower(): continue
 
             # handling discount lines
-            if len(line.words[-1].text) == 4 and "e" in line.words[-1].text:
-                # TODO: implement adding discount to previus row
+            if "e" in line.words[-1].text or "kedvezmeny" in line.text.lower() or "akci" in line.text.lower():
+                self._apply_discount_on_item(line)
                 continue
             
             # at this point we consider the line as order line
-            self.order_items.append(Item.from_line(line))
+            item_name, item_price = line.extract_item_data()
+            if item_name is None: continue
+                
 
-    # TODO: ugly that item is used here, but it actually need the same logic
+            item = Item(line.line_num, item_name, item_price, 0, line.text)
+            self.order_items.append(item)
+
     def _extract_total(self) -> int:
-        item:Item = Item(0, "not found", 0, 0, "")
+        price = None
+
         for line in self._lines:
             if "fizetend" in line.text.lower():
-                item = Item.from_line(line)
+                price = line.extract_item_data()
         
-        return item.price
+        return price
     
-
+    # TODO: it feels not too robust
+    def _apply_discount_on_item(self, discount_line:Line):
+        _, discount_amount = discount_line.extract_item_data()
+        for item in reversed(self.order_items):
+            if item.line_num == discount_line.line_num - 1 :
+                item.add_discount(-discount_amount)
+                break
+        
+        
     def to_json(self) -> str:
         """
         Returns the object's data in a json string.
         """
-        items = [{"name": item.name, "price": item.price, "parsed_line": item.raw_text} for item in self.order_items]
+        items = [{"name": item.name, "price": item.price, "discount": item.discount,  "parsed_line": item.raw_text} for item in self.order_items]
 
         data = {
             # TODO: parse dat from the invoice
@@ -398,7 +401,7 @@ if __name__ == "__main__":
         "test_invoices/16000333862025032623918.png",  
         "test_invoices/16000335892025032535080.png",
         "test_invoices/16000333892025031436070 (1).png",
-        "test_invoices/16000335892025032735441.png"
+        # "test_invoices/16000335892025032735441.png"
     ]
 
 
