@@ -383,15 +383,15 @@ class Invoice:
 if __name__ == "__main__":
 
     invoice_paths = [
-        "test_invoices/16000333862025032623918.png",  
-        "test_invoices/16000335892025032535080.png",
-        "test_invoices/16000333892025031436070 (1).png",
-        # "test_invoices/16000335892025032735441.png"
+        "16000333862025032623918",  
+        "16000335892025032535080",
+        "16000333892025031436070 (1)",
+        "16000335892025032735441"
     ]
 
 
 
-    for inv_path in invoice_paths:
+    for inv_name in invoice_paths:
 
 ##### Exploration
         # img = preprocess_image(inv_path)
@@ -421,11 +421,14 @@ if __name__ == "__main__":
         # data_raw:str = pytesseract.image_to_data(inv_path, lang="eng", output_type=pytesseract.Output.DICT ,config=custom_config)
 
 # latest work test
-        data_dict = process_invoice(inv_path)
+        data_dict = process_invoice(f"test_invoices/{inv_name}.png")
         # print(data_dict)
         invoice = Invoice(data_dict)
 
         print(invoice.to_json())
+
+        with open(f"test_invoices/output/{inv_name}.json", "w") as file:
+            file.write(invoice.to_json())
 
         # invoice._extract_date()
         
