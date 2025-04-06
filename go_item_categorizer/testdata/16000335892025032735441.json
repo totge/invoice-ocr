@@ -1,0 +1,19 @@
+{
+    "datetime": "2025-03-27 09:05:00",
+    "items": [
+        {
+            "name": "PR. PUDIN VANI(6)F",
+            "price": 439,
+            "discount": 0,
+            "parsed_line": "PR. PUDIN VANI(6)F 439 B00"
+        },
+        {
+            "name": "PISZTACIAS CSIGA",
+            "price": 419,
+            "discount": 0,
+            "parsed_line": "PISZTACIAS CSIGA 419 B00"
+        }
+    ],
+    "parsed_total": 858,
+    "calculated_total": 858
+}

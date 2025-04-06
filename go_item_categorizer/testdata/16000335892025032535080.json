@@ -1,0 +1,37 @@
+{
+    "datetime": "2025-03-25 17:01:00",
+    "items": [
+        {
+            "name": "VIZES ZSEMLE (B)",
+            "price": 195,
+            "discount": 0,
+            "parsed_line": "VIZES ZSEMLE (B) 195 BOO"
+        },
+        {
+            "name": "BIO TOJAS",
+            "price": 595,
+            "discount": 0,
+            "parsed_line": "BIO TOJAS 595 A0O"
+        },
+        {
+            "name": "VOROSHAGYMA KG",
+            "price": 71,
+            "discount": 0,
+            "parsed_line": "VOROSHAGYMA KG 71 Coo"
+        },
+        {
+            "name": "FR. CSIRKEMELLFILE",
+            "price": 1089,
+            "discount": 0,
+            "parsed_line": "FR. CSIRKEMELLFILE 1 089 AOO"
+        },
+        {
+            "name": "S.CS.MELLSJALEP(6)",
+            "price": 599,
+            "discount": 0,
+            "parsed_line": "S.CS.MELLSJALEP(6) 599 COO"
+        }
+    ],
+    "parsed_total": 2549,
+    "calculated_total": 2549
+}

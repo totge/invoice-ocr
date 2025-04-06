@@ -1,0 +1,115 @@
+{
+    "datetime": "2025-03-26 17:10:00",
+    "items": [
+        {
+            "name": "TARTOS TEJ 2,8%",
+            "price": 738,
+            "discount": 0,
+            "parsed_line": "TARTOS TEJ 2,8% 738 A000"
+        },
+        {
+            "name": "ALMA, GALA KG",
+            "price": 445,
+            "discount": 0,
+            "parsed_line": "ALMA, GALA KG 445 coo"
+        },
+        {
+            "name": "NARANCS KG",
+            "price": 593,
+            "discount": 0,
+            "parsed_line": "NARANCS KG 593 C00"
+        },
+        {
+            "name": "SUTOPOR",
+            "price": 289,
+            "discount": 0,
+            "parsed_line": "SUTOPOR 289 C00"
+        },
+        {
+            "name": "SZODABIKARBONA",
+            "price": 69,
+            "discount": 0,
+            "parsed_line": "SZODABIKARBONA 69 C00"
+        },
+        {
+            "name": "PAR.SAJTPEHELY( 12)",
+            "price": 899,
+            "discount": 0,
+            "parsed_line": "PAR.SAJTPEHELY( 12) 899 B00"
+        },
+        {
+            "name": "FEKETEBORS, EGESZ",
+            "price": 218,
+            "discount": 0,
+            "parsed_line": "FEKETEBORS, EGESZ 218 C00"
+        },
+        {
+            "name": "OROLT KOMENY",
+            "price": 99,
+            "discount": 0,
+            "parsed_line": "OROLT KOMENY 99 C00"
+        },
+        {
+            "name": "ZSELATIN FIX",
+            "price": 369,
+            "discount": 0,
+            "parsed_line": "ZSELATIN FIX 369 C00"
+        },
+        {
+            "name": "TEGELYES TEHENTURO",
+            "price": 399,
+            "discount": 0,
+            "parsed_line": "TEGELYES TEHENTURO 399 B00"
+        },
+        {
+            "name": "TEHENTURO",
+            "price": 849,
+            "discount": 0,
+            "parsed_line": "TEHENTURO 849 B00"
+        },
+        {
+            "name": "EPER IZU TURODESSZ",
+            "price": 687,
+            "discount": 0,
+            "parsed_line": "EPER IZU TURODESSZ 687 B00"
+        },
+        {
+            "name": "TEJFOL 20% 175G",
+            "price": 458,
+            "discount": 0,
+            "parsed_line": "TEJFOL 20% 175G 458 Boo"
+        },
+        {
+            "name": "UHT FOZOTEJSZIN20%",
+            "price": 949,
+            "discount": 0,
+            "parsed_line": "UHT FOZOTEJSZIN20% 949 B00"
+        },
+        {
+            "name": "GOUDA",
+            "price": 1599,
+            "discount": 0,
+            "parsed_line": "GOUDA 1.599 BOO"
+        },
+        {
+            "name": "HP GRIZPUD.FAHE(3) ;",
+            "price": 379,
+            "discount": 0,
+            "parsed_line": "HP GRIZPUD.FAHE(3) ; 379 B00"
+        },
+        {
+            "name": "GYOMBER KG",
+            "price": 480,
+            "discount": 0,
+            "parsed_line": "GYOMBER KG 480 coo"
+        },
+        {
+            "name": "FR. CSIRKEMELLFILE",
+            "price": 1089,
+            "discount": 0,
+            "parsed_line": "FR. CSIRKEMELLFILE 1 089 AO0O"
+        }
+    ],
+    "parsed_total": 10608,
+    "calculated_total": 10608
+}

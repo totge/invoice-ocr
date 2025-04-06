@@ -1,0 +1,121 @@
+{
+    "datetime": "2025-03-14 16:05:00",
+    "items": [
+        {
+            "name": "PARAD. PURE",
+            "price": 359,
+            "discount": 0,
+            "parsed_line": "PARAD. PURE 359 C00"
+        },
+        {
+            "name": "TEGELYES TEHENTURO",
+            "price": 389,
+            "discount": 0,
+            "parsed_line": "TEGELYES TEHENTURO 389 B00"
+        },
+        {
+            "name": "ZOLD TEAK JAZM. (4)",
+            "price": 898,
+            "discount": 0,
+            "parsed_line": "ZOLD TEAK JAZM. (4) 898 C00"
+        },
+        {
+            "name": "TARTOS TEJ 2,8%",
+            "price": 375,
+            "discount": 0,
+            "parsed_line": "TARTOS TEJ 2,8% 375 A0d0"
+        },
+        {
+            "name": "LORD NEL.CITR. (8)",
+            "price": 398,
+            "discount": 0,
+            "parsed_line": "LORD NEL.CITR. (8) 398 C00"
+        },
+        {
+            "name": "LORD NEL.AFONY. (8)",
+            "price": 398,
+            "discount": 0,
+            "parsed_line": "LORD NEL.AFONY. (8) 398 C00"
+        },
+        {
+            "name": "VEGYES VIRAGMEZ 90",
+            "price": 1599,
+            "discount": -400,
+            "parsed_line": "VEGYES VIRAGMEZ 90 1 999 C00"
+        },
+        {
+            "name": "CSEM.KUKORICA",
+            "price": 698,
+            "discount": 0,
+            "parsed_line": "CSEM.KUKORICA 698 C00"
+        },
+        {
+            "name": "FR. CSMELLFILE SZE",
+            "price": 1299,
+            "discount": 0,
+            "parsed_line": "FR. CSMELLFILE SZE 1 299 AOO"
+        },
+        {
+            "name": "ROYAL CSIRKEM. (16)",
+            "price": 765,
+            "discount": 0,
+            "parsed_line": "ROYAL CSIRKEM. (16) 765 C00"
+        },
+        {
+            "name": "KREMJOGHURT NARA(4",
+            "price": 349,
+            "discount": 0,
+            "parsed_line": "KREMJOGHURT NARA(4 349 B00"
+        },
+        {
+            "name": "PISZTACIAS CROISSANT",
+            "price": 199,
+            "discount": 0,
+            "parsed_line": "PISZTACIAS CROISSANT 199 BOO"
+        },
+        {
+            "name": "TEJFOL 20% 175G",
+            "price": 458,
+            "discount": 0,
+            "parsed_line": "TEJFOL 20% 175G 458 Boo"
+        },
+        {
+            "name": "SZOLO PIROS 500G",
+            "price": 899,
+            "discount": 0,
+            "parsed_line": "SZOLO PIROS 500G 899 C00"
+        },
+        {
+            "name": "NARANCS KG",
+            "price": 425,
+            "discount": 0,
+            "parsed_line": "NARANCS KG 425 coo"
+        },
+        {
+            "name": "VIZES ZSEMLE (B)",
+            "price": 39,
+            "discount": 0,
+            "parsed_line": "VIZES ZSEMLE (B) 39 Boo"
+        },
+        {
+            "name": "KIGYOUBORKA DB",
+            "price": 598,
+            "discount": -200,
+            "parsed_line": "KIGYOUBORKA DB 798 C00"
+        },
+        {
+            "name": "PARADIO",
+            "price": 3198,
+            "discount": 0,
+            "parsed_line": "PARADIO 3 198 C00"
+        },
+        {
+            "name": "KESUDIOBEL",
+            "price": 2398,
+            "discount": 0,
+            "parsed_line": "KESUDIOBEL 2 398 C00"
+        }
+    ],
+    "parsed_total": 15741,
+    "calculated_total": 15741
+}
