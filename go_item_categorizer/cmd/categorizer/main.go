@@ -10,6 +10,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/catalog"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
 )
 
@@ -82,34 +83,12 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel() // Important: release context resources when main exits
 
-	// --- 5. Fetch Categories from AppSheet ---
-	log.Printf("Fetching categories from table '%s'...", string(appsheet.TableCategories))
-	// Prepare the data structure to hold the results
-	var categoryData appsheet.AppSheetTableData[appsheet.Category]
-
-	// Call the client method, passing the specific table name and the data holder
-	err = appsheetClient.ReadRecords(ctx, appsheet.TableCategories, &categoryData)
+	log.Println("Buiolding product catalog")
+	productCatalog, err := catalog.BuildProductCatalog(ctx, appsheetClient)
 	if err != nil {
-		// This error includes request errors OR the decoding error IF you fixed ReadRecords
-		log.Fatalf("FATAL: Failed to fetch categories: %v", err)
+		log.Println("Error happend when building the catalog")
 	}
-	// Access the data via the struct field
-	categories := categoryData.Data
-	log.Printf("Successfully fetched %d categories.", len(categories))
-
-	log.Printf("Fetching expenses from table '%s'...", string(appsheet.TableExpenses))
-	// Prepare the data structure to hold the results
-	var expenseData appsheet.AppSheetTableData[appsheet.Category]
-
-	// Call the client method, passing the specific table name and the data holder
-	err = appsheetClient.ReadRecords(ctx, appsheet.TableExpenses, &expenseData)
-	if err != nil {
-		// This error includes request errors OR the decoding error IF you fixed ReadRecords
-		log.Fatalf("FATAL: Failed to fetch expenses: %v", err)
-	}
-	// Access the data via the struct field
-	expenses := expenseData.Data
-	log.Printf("Successfully fetched %d expense items.", len(expenses))
+	log.Printf("Catalog built with %d cost groups\n", len(productCatalog))
 }
 
 func loadConfig() (Config, error) {
