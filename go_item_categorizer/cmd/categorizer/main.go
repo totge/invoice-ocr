@@ -8,10 +8,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/google/generative-ai-go/genai"
 	"github.com/joho/godotenv"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/catalog"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/llm"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
+	"google.golang.org/api/option"
 )
 
 // Config struct to hold application configuration
@@ -89,6 +92,23 @@ func main() {
 		log.Println("Error happend when building the catalog")
 	}
 	log.Printf("Catalog built with %d cost groups\n", len(productCatalog))
+
+	// --- 5. Prompt genai to get the categorized items
+	ctx = context.Background()
+	geminiClient, err := genai.NewClient(ctx, option.WithAPIKey(config.GeminiApiKey))
+	if err != nil {
+		log.Fatalf("FATAL: Failed to create Gemini client: %v", err)
+	}
+	resp := llm.GenerateContent(*geminiClient, ctx)
+
+	for _, cand := range resp.Candidates {
+		if cand.Content != nil {
+			for _, part := range cand.Content.Parts {
+				fmt.Println(part)
+			}
+		}
+	}
+	fmt.Println("---")
 }
 
 func loadConfig() (Config, error) {
