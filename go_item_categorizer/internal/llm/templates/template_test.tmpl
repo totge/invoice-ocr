@@ -1,0 +1,11 @@
+TASK:
+{{ .Task }}
+
+INPUT:
+{{ .InputData.Items }}
+{{ .InputData.Categories }}
+
+EXAMPLES:
+{{ range .Examples }}
+{{ . }}
+{{ end }}

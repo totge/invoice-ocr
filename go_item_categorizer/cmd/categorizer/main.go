@@ -1,20 +1,14 @@
 package main // Declares this as an executable program
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log"
 	"os"
-	"time"
 
-	"github.com/google/generative-ai-go/genai"
 	"github.com/joho/godotenv"
-	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
-	"github.com/totge/invoice-oc/go_item_categorizer/internal/catalog"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/llm"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
-	"google.golang.org/api/option"
 )
 
 // Config struct to hold application configuration
@@ -72,43 +66,51 @@ func main() {
 
 	// ... Next steps: Process parsedReceipt ...
 
-	// --- 3. Initialize AppSheet Client ---
-	log.Println("Initializing AppSheet client...")
-	appsheetClient, err := appsheet.NewClient(config.AppSheetBaseUrl, config.AppSheetAppId, config.AppSheetApiKey)
-	if err != nil {
-		log.Fatalf("FATAL: Failed to create AppSheet client: %v", err)
-	}
-	log.Println("AppSheet client initialized.")
+	// // --- 3. Initialize AppSheet Client ---
+	// log.Println("Initializing AppSheet client...")
+	// appsheetClient, err := appsheet.NewClient(config.AppSheetBaseUrl, config.AppSheetAppId, config.AppSheetApiKey)
+	// if err != nil {
+	// 	log.Fatalf("FATAL: Failed to create AppSheet client: %v", err)
+	// }
+	// log.Println("AppSheet client initialized.")
 
-	// --- 4. Create Context for API Calls ---
-	// Use a background context for now, or add a timeout if needed
-	// Example: 2 minute timeout for fetching *all* initial AppSheet data
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel() // Important: release context resources when main exits
+	// // --- 4. Create Context for API Calls ---
+	// // Use a background context for now, or add a timeout if needed
+	// // Example: 2 minute timeout for fetching *all* initial AppSheet data
+	// ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	// defer cancel() // Important: release context resources when main exits
 
-	log.Println("Buiolding product catalog")
-	productCatalog, err := catalog.BuildProductCatalog(ctx, appsheetClient)
-	if err != nil {
-		log.Println("Error happend when building the catalog")
-	}
-	log.Printf("Catalog built with %d cost groups\n", len(productCatalog))
+	// log.Println("Building product catalog")
+	// productCatalog, err := catalog.BuildProductCatalog(ctx, appsheetClient)
+	// if err != nil {
+	// 	log.Println("Error happend when building the catalog")
+	// }
+	// log.Printf("Catalog built with %d cost groups\n", len(productCatalog))
 
 	// --- 5. Prompt genai to get the categorized items
-	ctx = context.Background()
-	geminiClient, err := genai.NewClient(ctx, option.WithAPIKey(config.GeminiApiKey))
-	if err != nil {
-		log.Fatalf("FATAL: Failed to create Gemini client: %v", err)
-	}
-	resp := llm.GenerateContent(*geminiClient, ctx)
+	// ctx = context.Background()
+	// geminiClient, err := genai.NewClient(ctx, option.WithAPIKey(config.GeminiApiKey))
+	// if err != nil {
+	// 	log.Fatalf("FATAL: Failed to create Gemini client: %v", err)
+	// }
+	// resp := llm.GenerateContent(*geminiClient, ctx)
 
-	for _, cand := range resp.Candidates {
-		if cand.Content != nil {
-			for _, part := range cand.Content.Parts {
-				fmt.Println(part)
-			}
-		}
+	// for _, cand := range resp.Candidates {
+	// 	if cand.Content != nil {
+	// 		for _, part := range cand.Content.Parts {
+	// 			fmt.Println(part)
+	// 		}
+	// 	}
+	// }
+	// fmt.Println("---")
+
+	renderedTemplate, err := llm.RenderTemplate()
+	if err != nil {
+		log.Fatalf("FATAL: Failed to render template: %v", err)
 	}
-	fmt.Println("---")
+
+	log.Printf("Rendered template:\n\n%s\n", &renderedTemplate)
+
 }
 
 func loadConfig() (Config, error) {

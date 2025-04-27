@@ -1,20 +1,65 @@
 package llm
 
 import (
-	"context"
+	"bytes"
+	"embed"
 	"log"
-
-	"github.com/google/generative-ai-go/genai"
+	"text/template"
 )
 
-func GenerateContent(client genai.Client, ctx context.Context) *genai.GenerateContentResponse {
-	model := client.GenerativeModel("gemini-2.0-flash")
-	resp, err := model.GenerateContent(ctx, genai.Text("How does AI work?"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	return resp // helper function for printing content parts
+type PromptData struct {
+	Task      string
+	InputData Input
+	Examples  []string
 }
+
+type Input struct {
+	Items      []string
+	Categories []string
+}
+
+//go:embed templates/*.tmpl
+var promptTemplates embed.FS // Embeds the templates directory content
+
+func RenderTemplate() (bytes.Buffer, error) {
+
+	templateData := PromptData{
+		Task: "Do something",
+		InputData: Input{
+			Items:      []string{"Narancs", "Sertés darálthús", "Tejes kifli"},
+			Categories: []string{"Élelmiszer", "Sport", "Háztartás"},
+		},
+		Examples: []string{
+			"Tejes kifli -> Élelmiszer",
+			"Tejhabosító gép -> Háztartás",
+		},
+	}
+
+	var renderedTemplate bytes.Buffer
+
+	tmplFile, err := promptTemplates.ReadFile("templates/template_test.tmpl")
+	if err != nil {
+		return renderedTemplate, err
+	}
+
+	log.Println("Parsing template")
+	// tmpl, err := template.ParseFiles(tmplFile)
+	tmpl, err := template.New("tets").Parse(string(tmplFile))
+	if err != nil {
+		return renderedTemplate, err
+	}
+
+	log.Println("Rendering template")
+	err = tmpl.Execute(&renderedTemplate, templateData)
+	if err != nil {
+		return renderedTemplate, err
+	}
+	log.Println("Template rendered successfully")
+
+	return renderedTemplate, nil
+}
+
+// // TODO: addd helper function that makes the prompt parts for a given stage
 
 // //go:embed templates/*.tmpl
 // var promptTemplates embed.FS // Embeds the templates directory content
