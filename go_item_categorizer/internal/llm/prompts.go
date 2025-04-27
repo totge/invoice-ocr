@@ -7,6 +7,9 @@ import (
 	"log"
 	"strings"
 	"text/template"
+
+	"github.com/google/generative-ai-go/genai"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
 )
 
 type PromptData struct {
@@ -72,17 +75,88 @@ func RenderTemplate() (string, error) {
 	// 	},
 	// }
 
+	stage1TemplateData := stage1Input{
+		CostGroups: []string{
+			"Élelmiszer",
+			"Sport",
+			"Háztartás",
+		},
+		Items: []receipt.Item{
+			{
+				Name: "TARTOS TEJ 2,8%",
+				Price: 738,
+				Discount: 0,
+			},
+			{
+				Name: "ALMA, GALA KG",
+				Price: 445,
+				Discount: 0,
+			},
+			{
+				Name: "NARANCS KG",
+				Price: 593,
+				Discount: 0,
+			},
+		},
+	}
+
 	// renderedTemplate, err := renderTemplate("template_test.tmpl", templateData)
 	// if err != nil {
 	// 	return "", err
 	// }
 
-	renderedTemplate, err := renderTemplate("stage1_TASK.tmpl", struct{}{})
+	// renderedTemplate, err := renderTemplate("stage1_TASK.tmpl", struct{}{})
+	// if err != nil {
+	// 	return "", err
+	// }
+
+	// return renderedTemplate, nil
+
+	var stage1promptstr string
+
+	p, err := buildStage1Prompt(stage1TemplateData)
 	if err != nil {
 		return "", err
 	}
 
-	return renderedTemplate, nil
+	stage1promptstr += string(p.taskPrompt) + "\n"
+	stage1promptstr += string(p.inuptData) + "\n"
+	stage1promptstr += string(p.examples) + "\n"
+
+	return stage1promptstr, nil
+
+}
+
+func buildStage1Prompt(inputData stage1Input) (prompt, error) {
+	var assambledPrompt prompt
+
+	systemPrompt, err := renderTemplate("system_instructions.tmpl", struct{}{})
+	if err != nil {
+		return assambledPrompt, err
+	}
+
+	taskPrompt, err := renderTemplate("stage1_TASK.tmpl", struct{}{})
+	if err != nil {
+		return assambledPrompt, err
+	}
+
+	inputPrompt, err := renderTemplate("stage1_INPUT.tmpl", inputData)
+	if err != nil {
+		return assambledPrompt, err
+	}
+
+	examplesPrompt, err := renderTemplate("stage1_EXAMPLES.tmpl", struct{}{})
+	if err != nil {
+		return assambledPrompt, err
+	}
+
+	assambledPrompt.systemPrompt = &genai.Content{Parts: []genai.Part{genai.Text(systemPrompt)}}
+	assambledPrompt.taskPrompt = genai.Text(taskPrompt)
+	assambledPrompt.inuptData = genai.Text(inputPrompt)
+	assambledPrompt.examples = genai.Text(examplesPrompt)
+	assambledPrompt.outputFormat = stage1OutputFormat
+
+	return assambledPrompt, nil
 }
 
 // renderTemplate executes a named template with the given data struct.
