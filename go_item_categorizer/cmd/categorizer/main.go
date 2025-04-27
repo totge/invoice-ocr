@@ -109,7 +109,7 @@ func main() {
 		log.Fatalf("FATAL: Failed to render template: %v", err)
 	}
 
-	log.Printf("Rendered template:\n\n%s\n", &renderedTemplate)
+	log.Printf("Rendered template:\n\n%s\n", renderedTemplate)
 
 }
 

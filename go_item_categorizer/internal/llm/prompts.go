@@ -3,7 +3,9 @@ package llm
 import (
 	"bytes"
 	"embed"
+	"fmt"
 	"log"
+	"strings"
 	"text/template"
 )
 
@@ -21,117 +23,97 @@ type Input struct {
 //go:embed templates/*.tmpl
 var promptTemplates embed.FS // Embeds the templates directory content
 
-func RenderTemplate() (bytes.Buffer, error) {
+var parsedTemplates *template.Template
 
-	templateData := PromptData{
-		Task: "Do something",
-		InputData: Input{
-			Items:      []string{"Narancs", "Sertés darálthús", "Tejes kifli"},
-			Categories: []string{"Élelmiszer", "Sport", "Háztartás"},
+// init parses all templates when the package is loaded.
+func init() {
+	// Define helper functions available within templates
+	funcMap := template.FuncMap{
+		// add function: Allows {{ add $index 1 }} in templates for 1-based indexing
+		"add": func(a, b int) int {
+			return a + b
 		},
-		Examples: []string{
-			"Tejes kifli -> Élelmiszer",
-			"Tejhabosító gép -> Háztartás",
+		// join function: Allows {{ join .Path " / " }} in templates
+		"join": func(s []string, sep string) string {
+			// Basic protection against nil slice if needed
+			if s == nil {
+				return ""
+			}
+			return strings.Join(s, sep)
 		},
 	}
 
-	var renderedTemplate bytes.Buffer
+	var err error
+	// Create a new template, add helper functions, then parse all embedded files matching the pattern.
+	parsedTemplates, err = template.New("geminiPrompts"). // Give the template collection a name
+								Funcs(funcMap).                              // Attach the helper functions
+								ParseFS(promptTemplates, "templates/*.tmpl") // Parse from embedded FS
 
-	tmplFile, err := promptTemplates.ReadFile("templates/template_test.tmpl")
 	if err != nil {
-		return renderedTemplate, err
+		// If templates fail to parse, the application cannot function correctly.
+		// Using log.Fatalf ensures the error is printed and the app exits.
+		log.Fatalf("FATAL: Failed to parse prompt templates: %v", err)
 	}
 
-	log.Println("Parsing template")
-	// tmpl, err := template.ParseFiles(tmplFile)
-	tmpl, err := template.New("tets").Parse(string(tmplFile))
-	if err != nil {
-		return renderedTemplate, err
-	}
+	log.Println("Gemini prompt templates loaded and parsed successfully.")
+}
 
-	log.Println("Rendering template")
-	err = tmpl.Execute(&renderedTemplate, templateData)
+func RenderTemplate() (string, error) {
+
+	// templateData := PromptData{
+	// 	Task: "Do something",
+	// 	InputData: Input{
+	// 		Items:      []string{"Narancs", "Sertés darálthús", "Tejes kifli"},
+	// 		Categories: []string{"Élelmiszer", "Sport", "Háztartás"},
+	// 	},
+	// 	Examples: []string{
+	// 		"Tejes kifli -> Élelmiszer",
+	// 		"Tejhabosító gép -> Háztartás",
+	// 	},
+	// }
+
+	// renderedTemplate, err := renderTemplate("template_test.tmpl", templateData)
+	// if err != nil {
+	// 	return "", err
+	// }
+
+	renderedTemplate, err := renderTemplate("stage1_TASK.tmpl", struct{}{})
 	if err != nil {
-		return renderedTemplate, err
+		return "", err
 	}
-	log.Println("Template rendered successfully")
 
 	return renderedTemplate, nil
 }
 
-// // TODO: addd helper function that makes the prompt parts for a given stage
+// renderTemplate executes a named template with the given data struct.
+// templateName should be the base filename of the template (e.g., "stage1_cost_group.tmpl").
+// data should be a pointer to the corresponding data struct (e.g., &stage1Data{}).
+func renderTemplate(templateName string, data interface{}) (string, error) {
+	// Safety check in case init() somehow failed silently (shouldn't happen with log.Fatalf)
+	if parsedTemplates == nil {
+		return "", fmt.Errorf("internal error: prompt templates not initialized")
+	}
 
-// //go:embed templates/*.tmpl
-// var promptTemplates embed.FS // Embeds the templates directory content
+	// Lookup the specific template by its filename within the parsed collection.
+	tmpl := parsedTemplates.Lookup(templateName)
+	if tmpl == nil {
+		// This indicates a programming error (e.g., typo in templateName)
+		return "", fmt.Errorf("template '%s' not found in parsed templates", templateName)
+	}
 
-// // parsedTemplates will store the parsed template objects for efficient reuse.
-// var parsedTemplates *template.Template
+	// Create a buffer to capture the output of the template execution.
+	var filledPrompt bytes.Buffer
 
-// // (Place this after the variable declarations in prompts.go)
-// var Gemini20Flash GeminiModel = "gemini-2.0-flash"
+	// Execute the template, writing the output to the buffer and passing the data struct.
+	err := tmpl.Execute(&filledPrompt, data)
+	if err != nil {
+		// Error occurred during template execution (e.g., data mismatch, bad helper call)
+		return "", fmt.Errorf("failed to execute template '%s': %w", templateName, err)
+	}
 
-// // init parses all templates when the package is loaded.
-// func init() {
-// 	// Define helper functions available within templates
-// 	funcMap := template.FuncMap{
-// 		// add function: Allows {{ add $index 1 }} in templates for 1-based indexing
-// 		"add": func(a, b int) int {
-// 			return a + b
-// 		},
-// 		// join function: Allows {{ join .Path " / " }} in templates
-// 		"join": func(s []string, sep string) string {
-// 			// Basic protection against nil slice if needed
-// 			if s == nil {
-// 				return ""
-// 			}
-// 			return strings.Join(s, sep)
-// 		},
-// 	}
-
-// 	var err error
-// 	// Create a new template, add helper functions, then parse all embedded files matching the pattern.
-// 	parsedTemplates, err = template.New("geminiPrompts"). // Give the template collection a name
-// 								Funcs(funcMap).                              // Attach the helper functions
-// 								ParseFS(promptTemplates, "templates/*.tmpl") // Parse from embedded FS
-
-// 	if err != nil {
-// 		// If templates fail to parse, the application cannot function correctly.
-// 		// Using log.Fatalf ensures the error is printed and the app exits.
-// 		log.Fatalf("FATAL: Failed to parse prompt templates: %v", err)
-// 	}
-
-// 	log.Println("Gemini prompt templates loaded and parsed successfully.")
-// }
-
-// // formatPrompt executes a named template with the given data struct.
-// // templateName should be the base filename of the template (e.g., "stage1_cost_group.tmpl").
-// // data should be a pointer to the corresponding data struct (e.g., &stage1Data{}).
-// func formatPrompt(templateName string, data interface{}) (string, error) {
-// 	// Safety check in case init() somehow failed silently (shouldn't happen with log.Fatalf)
-// 	if parsedTemplates == nil {
-// 		return "", fmt.Errorf("internal error: prompt templates not initialized")
-// 	}
-
-// 	// Lookup the specific template by its filename within the parsed collection.
-// 	tmpl := parsedTemplates.Lookup(templateName)
-// 	if tmpl == nil {
-// 		// This indicates a programming error (e.g., typo in templateName)
-// 		return "", fmt.Errorf("template '%s' not found in parsed templates", templateName)
-// 	}
-
-// 	// Create a buffer to capture the output of the template execution.
-// 	var filledPrompt bytes.Buffer
-
-// 	// Execute the template, writing the output to the buffer and passing the data struct.
-// 	err := tmpl.Execute(&filledPrompt, data)
-// 	if err != nil {
-// 		// Error occurred during template execution (e.g., data mismatch, bad helper call)
-// 		return "", fmt.Errorf("failed to execute template '%s': %w", templateName, err)
-// 	}
-
-// 	// Return the generated prompt string from the buffer.
-// 	return filledPrompt.String(), nil
-// }
+	// Return the generated prompt string from the buffer.
+	return filledPrompt.String(), nil
+}
 
 // // getSystemInstructions formats the system prompt.
 // // Currently takes no dynamic data, but could be adapted if needed.
