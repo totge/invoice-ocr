@@ -2,7 +2,6 @@ package llm
 
 import (
 	"github.com/google/generative-ai-go/genai"
-	"github.com/totge/invoice-oc/go_item_categorizer/internal/catalog"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
 )
 
@@ -10,9 +9,9 @@ type GeminiModel string
 
 type prompt struct {
 	systemPrompt *genai.Content
-	taskPrompt genai.Text
-	inuptData genai.Text
-	examples genai.Text
+	taskPrompt   genai.Text
+	inuptData    genai.Text
+	examples     genai.Text
 	outputFormat *genai.Schema
 }
 
@@ -42,14 +41,14 @@ var stage1OutputFormat = &genai.Schema{
 }
 
 type stage1Output struct {
-	ItemName string `json:"item_name"`
+	ItemName  string `json:"item_name"`
 	CostGroup string `json:"cost_group"`
 }
 
 type stage2Input struct {
 	CostGroup string
-	Items []receipt.Item
-	Products []catalog.ProductClassification
+	Items     []receipt.Item
+	Products  string
 }
 
 var stage2OutputFormat = &genai.Schema{
@@ -82,17 +81,16 @@ var stage2OutputFormat = &genai.Schema{
 				Description: "best fitting general product name, selected from the provided product list",
 				Nullable:    false,
 			},
-
 		},
 	},
 }
 
 type stage2Output struct {
-	ItemName string `json:"item_name"`
-	CostGroup string `json:"cost_group"`
+	ItemName     string `json:"item_name"`
+	CostGroup    string `json:"cost_group"`
 	MainCategory string `json:"main_category"`
-	Subcategory string `json:"subcategory"`
-	ProductName string `json:"product_name"`
+	Subcategory  string `json:"subcategory"`
+	ProductName  string `json:"product_name"`
 }
 
 type CategorizedItem struct {

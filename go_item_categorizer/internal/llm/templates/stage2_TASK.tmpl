@@ -1,0 +1,7 @@
+TASK:
+You are given a list of receipt items that where previously matched with the '{{ .CostGroup }}' cost group. You are also given a list of products from the database that are in the {{ .CostGroup }}' cost group.
+Select the single best matching existing product from the produxt list for each of the provided receipt items.
+
+Analyze the receipt item's name, considering potential abbreviations, brand names, or variations due to the OCR process.
+Compare it against the existing products in the list provided product list, and try to find the best match based on the item's name and nature and the product's name and categorization information, consider the examples and guides for the task.
+You MUST choose exactly one product from the numbered list.
