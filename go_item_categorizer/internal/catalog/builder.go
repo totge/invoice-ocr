@@ -18,6 +18,16 @@ type ProductClassification struct {
 
 type ProductCatalog map[string][]ProductClassification
 
+func (p *ProductCatalog) GetCostGroups() []string {
+	costGroups := make([]string, len(*p))
+
+	for k := range *p {
+		costGroups = append(costGroups, k)
+	}
+
+	return costGroups
+}
+
 func BuildProductCatalog(ctx context.Context, client *appsheet.Client) (ProductCatalog, error) {
 
 	// --- 2. Fetch Categories from AppSheet ---
