@@ -61,7 +61,8 @@ func init() {
 	log.Println("Gemini prompt templates loaded and parsed successfully.")
 }
 
-func RenderTemplate() (string, error) {
+//TODO: only here for testing
+func RenderTemplate() (prompt, error) {
 
 	// templateData := PromptData{
 	// 	Task: "Do something",
@@ -116,14 +117,14 @@ func RenderTemplate() (string, error) {
 
 	p, err := buildStage1Prompt(stage1TemplateData)
 	if err != nil {
-		return "", err
+		return p, err
 	}
 
 	stage1promptstr += string(p.taskPrompt) + "\n"
 	stage1promptstr += string(p.inuptData) + "\n"
 	stage1promptstr += string(p.examples) + "\n"
 
-	return stage1promptstr, nil
+	return p, nil
 
 }
 
@@ -146,6 +147,38 @@ func buildStage1Prompt(inputData stage1Input) (prompt, error) {
 	}
 
 	examplesPrompt, err := renderTemplate("stage1_EXAMPLES.tmpl", struct{}{})
+	if err != nil {
+		return assambledPrompt, err
+	}
+
+	assambledPrompt.systemPrompt = &genai.Content{Parts: []genai.Part{genai.Text(systemPrompt)}}
+	assambledPrompt.taskPrompt = genai.Text(taskPrompt)
+	assambledPrompt.inuptData = genai.Text(inputPrompt)
+	assambledPrompt.examples = genai.Text(examplesPrompt)
+	assambledPrompt.outputFormat = stage1OutputFormat
+
+	return assambledPrompt, nil
+}
+
+func buildStage2Prompt(inputData stage2Input) (prompt, error) {
+	var assambledPrompt prompt
+
+	systemPrompt, err := renderTemplate("system_instructions.tmpl", struct{}{})
+	if err != nil {
+		return assambledPrompt, err
+	}
+
+	taskPrompt, err := renderTemplate("stage2_TASK.tmpl", inputData)
+	if err != nil {
+		return assambledPrompt, err
+	}
+
+	inputPrompt, err := renderTemplate("stage2_INPUT.tmpl", inputData)
+	if err != nil {
+		return assambledPrompt, err
+	}
+
+	examplesPrompt, err := renderTemplate("stage2_EXAMPLES.tmpl", struct{}{})
 	if err != nil {
 		return assambledPrompt, err
 	}

@@ -2,6 +2,8 @@ package catalog
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 
@@ -9,23 +11,41 @@ import (
 )
 
 type ProductClassification struct {
-	ProductName  string
-	CostGroup    string
-	MainCategory string
-	SubCategory  string
-	CategoryID   string
+	ProductName  string `json:"product_name"`
+	CostGroup    string `json:"cost_group"`
+	MainCategory string `json:"main_category"`
+	SubCategory  string `json:"subcategory"`
+	CategoryID   string `json:"category_id"`
 }
 
 type ProductCatalog map[string][]ProductClassification
 
 func (p *ProductCatalog) GetCostGroups() []string {
-	costGroups := make([]string, len(*p))
+	costGroups := make([]string, 0, len(*p))
 
 	for k := range *p {
 		costGroups = append(costGroups, k)
 	}
 
 	return costGroups
+}
+
+func (p *ProductCatalog) GetProductListJSON(costGroup string) ([]byte, error) {
+
+	products, ok := (*p)[costGroup]
+	if !ok {
+		log.Printf("cost group '%s' not found in catalog\n", costGroup)
+		return nil, fmt.Errorf("cost group '%s' not found", costGroup)
+	}
+
+	serializedData, err := json.Marshal(products)
+	if err != nil {
+		// Handle potential errors during JSON marshalling
+		log.Printf("error marshalling products for cost group '%s': %v\n", costGroup, err)
+		return nil, fmt.Errorf("failed to marshal products for cost group '%s': %w", costGroup, err)
+	}
+
+	return serializedData, nil
 }
 
 func BuildProductCatalog(ctx context.Context, client *appsheet.Client) (ProductCatalog, error) {
