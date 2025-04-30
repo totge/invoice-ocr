@@ -3,7 +3,6 @@ package llm
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/google/generative-ai-go/genai"
@@ -12,7 +11,7 @@ import (
 )
 
 func AssignCategoryData(client *genai.Client, ctx context.Context, items []receipt.Item, products catalog.ProductCatalog) ([]stage2Output, error) {
-	
+
 	enrichedItems := make([]stage2Output, 0, len(items))
 
 	costGroups := products.GetCostGroups()
@@ -35,15 +34,11 @@ func AssignCategoryData(client *genai.Client, ctx context.Context, items []recei
 		return enrichedItems, err
 	}
 
-	fmt.Println(processedResp)
-
 	stage2InputList, err := createStage2Input(items, products, processedResp)
 	if err != nil {
 		return enrichedItems, err
 	}
-	
 
-	
 	// run stage two for each stage2 input
 	for _, input := range stage2InputList {
 		stage2prompt, err := buildStage2Prompt(input)
@@ -78,7 +73,7 @@ func createStage2Input(items []receipt.Item, products catalog.ProductCatalog, pr
 		if itemList, ok := stage2GroupedItems[itemCostGroup]; ok {
 			stage2GroupedItems[itemCostGroup] = append(itemList, item)
 		} else {
-			stage2GroupedItems[itemCostGroup] = []receipt.Item{item,}
+			stage2GroupedItems[itemCostGroup] = []receipt.Item{item}
 		}
 	}
 
@@ -91,8 +86,8 @@ func createStage2Input(items []receipt.Item, products catalog.ProductCatalog, pr
 		}
 		stage2Inputs = append(stage2Inputs, stage2Input{
 			CostGroup: costGroup,
-			Items: itemList,
-			Products: string(productList),
+			Items:     itemList,
+			Products:  string(productList),
 		})
 	}
 
@@ -106,14 +101,14 @@ func createItemCostGroupMapping(response []stage1Output) map[string]string {
 		mapping[item.ItemName] = item.CostGroup
 	}
 	return mapping
-} 
+}
 
 // TODO: error handling in this
 // unmarshals the response into the provided type
 func processResponse[TargetT any](response *genai.GenerateContentResponse) ([]TargetT, error) {
 	var processedOutput []TargetT
 
-	log.Printf("response candidates: %d", len(response.Candidates))
+	// log.Printf("response candidates: %d", len(response.Candidates))
 	for _, c := range response.Candidates {
 		for _, part := range c.Content.Parts {
 			if txt, ok := part.(genai.Text); ok {

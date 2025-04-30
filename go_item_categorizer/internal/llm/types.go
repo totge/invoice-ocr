@@ -61,6 +61,11 @@ var stage2OutputFormat = &genai.Schema{
 				Description: "original name of the item, exactly as it was provided in the input",
 				Nullable:    false,
 			},
+			"category_id": {
+				Type:        genai.TypeString,
+				Description: "the category_id of the best matching row, exactly as it was provided in the input",
+				Nullable:    false,
+			},
 			"cost_group": {
 				Type:        genai.TypeString,
 				Description: "name of the cost group, exactly as it was provided in the input",
@@ -86,6 +91,7 @@ var stage2OutputFormat = &genai.Schema{
 }
 
 type stage2Output struct {
+	CategoryId   string `json:"category_id"`
 	ItemName     string `json:"item_name"`
 	CostGroup    string `json:"cost_group"`
 	MainCategory string `json:"main_category"`
