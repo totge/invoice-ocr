@@ -11,37 +11,105 @@ import (
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
 )
 
-func AssignCategoryData(client *genai.Client, ctx context.Context, items []receipt.Item, products catalog.ProductCatalog) (CategorizedReceipt, error) {
-	var enrichedReceipt CategorizedReceipt
+func AssignCategoryData(client *genai.Client, ctx context.Context, items []receipt.Item, products catalog.ProductCatalog) ([]stage2Output, error) {
+	
+	enrichedItems := make([]stage2Output, 0, len(items))
 
-	costGorups := products.GetCostGroups()
+	costGroups := products.GetCostGroups()
 
 	stg1Input := stage1Input{
-		CostGroups: costGorups,
+		CostGroups: costGroups,
 		Items:      items,
 	}
 
 	// TODO: this is the actual code
 	stg1Prompt, err := buildStage1Prompt(stg1Input)
 	if err != nil {
-		return enrichedReceipt, err
+		return enrichedItems, err
 	}
 
 	stg1Resp := generateContent(client, ctx, stg1Prompt)
 
 	processedResp, err := processResponse[stage1Output](stg1Resp)
 	if err != nil {
-		return enrichedReceipt, err
+		return enrichedItems, err
 	}
 
 	fmt.Println(processedResp)
 
-	// process response -> create cateorized item list from
+	stage2InputList, err := createStage2Input(items, products, processedResp)
+	if err != nil {
+		return enrichedItems, err
+	}
+	
 
-	return enrichedReceipt, nil
+	
+	// run stage two for each stage2 input
+	for _, input := range stage2InputList {
+		stage2prompt, err := buildStage2Prompt(input)
+		if err != nil {
+			return enrichedItems, err
+		}
+
+		stg2Resp := generateContent(client, ctx, stage2prompt)
+		processedResp, err := processResponse[stage2Output](stg2Resp)
+		if err != nil {
+			return enrichedItems, err
+		}
+		enrichedItems = append(enrichedItems, processedResp...)
+	}
+
+	// for each stage 2 input do the thing
+
+	return enrichedItems, nil
 }
 
+func createStage2Input(items []receipt.Item, products catalog.ProductCatalog, procesedStage1output []stage1Output) ([]stage2Input, error) {
+
+	costGroupMapping := createItemCostGroupMapping(procesedStage1output)
+
+	stage2GroupedItems := make(map[string][]receipt.Item)
+
+	// grouping original items by cost group
+	for _, item := range items {
+		itemCostGroup := costGroupMapping[item.Name]
+
+		// adding slice for new cost groups
+		if itemList, ok := stage2GroupedItems[itemCostGroup]; ok {
+			stage2GroupedItems[itemCostGroup] = append(itemList, item)
+		} else {
+			stage2GroupedItems[itemCostGroup] = []receipt.Item{item,}
+		}
+	}
+
+	stage2Inputs := make([]stage2Input, 0, len(stage2GroupedItems))
+	// creating stage2 input structs
+	for costGroup, itemList := range stage2GroupedItems {
+		productList, err := products.GetProductListJSON(costGroup)
+		if err != nil {
+			return stage2Inputs, err
+		}
+		stage2Inputs = append(stage2Inputs, stage2Input{
+			CostGroup: costGroup,
+			Items: itemList,
+			Products: string(productList),
+		})
+	}
+
+	return stage2Inputs, nil
+}
+
+// TODO: optimize this (as this is O(n^2)
+func createItemCostGroupMapping(response []stage1Output) map[string]string {
+	mapping := make(map[string]string, len(response))
+	for _, item := range response {
+		mapping[item.ItemName] = item.CostGroup
+	}
+	return mapping
+} 
+
 // TODO: error handling in this
+// unmarshals the response into the provided type
 func processResponse[TargetT any](response *genai.GenerateContentResponse) ([]TargetT, error) {
 	var processedOutput []TargetT
 

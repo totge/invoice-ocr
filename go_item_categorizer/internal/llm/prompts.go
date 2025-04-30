@@ -187,7 +187,7 @@ func buildStage2Prompt(inputData stage2Input) (prompt, error) {
 	assambledPrompt.taskPrompt = genai.Text(taskPrompt)
 	assambledPrompt.inuptData = genai.Text(inputPrompt)
 	assambledPrompt.examples = genai.Text(examplesPrompt)
-	assambledPrompt.outputFormat = stage1OutputFormat
+	assambledPrompt.outputFormat = stage2OutputFormat
 
 	return assambledPrompt, nil
 }
