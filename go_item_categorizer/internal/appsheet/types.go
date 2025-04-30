@@ -73,3 +73,16 @@ type Expense struct {
 	Amount        string `json:"Összeg"`
 	PaymentMethod string `json:"Fizetési mód"`
 }
+
+type ExpenseStage struct {
+	RowNumber    string `json:"_RowNumber"`
+	Id           string `json:"ID"`
+	ExpenseDate  string `json:"Vásárlás dátum"`
+	CategoryId   string `json:"Kategória ID"`
+	CostGroup    string `json:"Költség csoport"`
+	MainCategory string `json:"Kategória"`
+	SubCategory  string `json:"Alkategória"`
+	Name         string `json:"Megnevezés"`
+	Amount       string `json:"Összeg"`
+	OriginalName string `json:"Eredeti név"`
+}
