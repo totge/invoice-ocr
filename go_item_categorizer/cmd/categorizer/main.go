@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/google/generative-ai-go/genai"
 	"github.com/joho/godotenv"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/catalog"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/categorizer"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/llm"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
 	"google.golang.org/api/option"
@@ -101,15 +103,35 @@ func main() {
 	}
 
 	log.Println("Assigning categories to the items...")
-	enrichedItems, err := llm.AssignCategoryData(geminiClient, ctx, parsedReceipt.Items, productCatalog)
+	categoryMapping, err := llm.AssignCategoryData(geminiClient, ctx, parsedReceipt.Items, productCatalog)
 	if err != nil {
 		log.Fatalf("FATAL: Failure occured during llm interaction: %v", err)
 	}
 
-	for _, item := range enrichedItems{
-		fmt.Println(item)
+	enrichedReceipt := categorizer.CategorizeReceipt(*parsedReceipt, categoryMapping)
+
+	expensesToAdd := make([]appsheet.ExpenseStage, 0, len(enrichedReceipt.Items))
+	for _, item := range enrichedReceipt.Items {
+		expensesToAdd = append(expensesToAdd, appsheet.ExpenseStage{
+			ReceiptId:    enrichedReceipt.Timestamp + " - " + strconv.Itoa(enrichedReceipt.ParsedTotal) + " HUF",
+			ExpenseDate:  enrichedReceipt.Timestamp,
+			CostGroup:    item.CostGroup,
+			MainCategory: item.MainCategory,
+			SubCategory:  item.Subcategory,
+			Name:         item.ProductName,
+			Amount:       item.Price,
+			OriginalName: item.OriginalName,
+			Approved:     false,
+		})
 	}
 
+	log.Println("Adding expenses to appsheet table...")
+	err = appsheet.WriteRecords[appsheet.ExpenseStage](appsheetClient, ctx, appsheet.TableExpenseStage, expensesToAdd)
+	if err != nil {
+		log.Fatalf("FATAL: Failure occured during appsheet write: %v", err)
+	}
+
+	log.Printf("Successfully added %d items to appsheet.\n", len(expensesToAdd))
 
 	// for _, cand := range resp.Candidates {
 	// 	if cand.Content != nil {

@@ -99,18 +99,9 @@ type stage2Output struct {
 	ProductName  string `json:"product_name"`
 }
 
-type CategorizedItem struct {
-	Name         string `json:"name"`
-	Price        int    `json:"price"`
-	Discount     int    `json:"discount"`
-	CategoryId   string `json:"category_id"`
-	MainCategory string `json:"main_category"`
-	Subcategory  string `json:"subcategory"`
-	ProductName  string `json:"product_name"`
-}
-
-type CategorizedReceipt struct {
-	Timestamp   string            `json:"datetime"`
-	Items       []CategorizedItem `json:"items"`
-	ParsedTotal int               `json:"parsed_total"`
+type CategoryHierarchy struct {
+	CostGroup    string
+	MainCategory string
+	Subcategory  string
+	ProductName  string
 }

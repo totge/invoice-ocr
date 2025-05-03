@@ -11,8 +11,9 @@ const (
 	// ActionAdd instructs the API to add records.
 	ActionAdd AppSheetAction = "Add"
 
-	TableCategories AppSheetTable = "Kategóriák"
-	TableExpenses   AppSheetTable = "Kiadások"
+	TableCategories   AppSheetTable = "Kategóriák"
+	TableExpenses     AppSheetTable = "Kiadások"
+	TableExpenseStage AppSheetTable = "expense_stage"
 )
 
 // AppSheetActionRequest defines the structure for the body of an AppSheet Action API call.
@@ -54,12 +55,14 @@ type Expense struct {
 type ExpenseStage struct {
 	RowNumber    string `json:"_RowNumber"`
 	Id           string `json:"ID"`
+	ReceiptId    string `json:"Vásárlás ID"`
 	ExpenseDate  string `json:"Vásárlás dátum"`
 	CategoryId   string `json:"Kategória ID"`
 	CostGroup    string `json:"Költség csoport"`
 	MainCategory string `json:"Kategória"`
 	SubCategory  string `json:"Alkategória"`
 	Name         string `json:"Megnevezés"`
-	Amount       string `json:"Összeg"`
+	Amount       int    `json:"Összeg"`
 	OriginalName string `json:"Eredeti név"`
+	Approved     bool   `json:"Jóváhagyva"`
 }

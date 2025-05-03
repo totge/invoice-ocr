@@ -10,9 +10,7 @@ import (
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
 )
 
-func AssignCategoryData(client *genai.Client, ctx context.Context, items []receipt.Item, products catalog.ProductCatalog) ([]stage2Output, error) {
-
-	enrichedItems := make([]stage2Output, 0, len(items))
+func AssignCategoryData(client *genai.Client, ctx context.Context, items []receipt.Item, products catalog.ProductCatalog) (map[string]CategoryHierarchy, error) {
 
 	costGroups := products.GetCostGroups()
 
@@ -24,39 +22,55 @@ func AssignCategoryData(client *genai.Client, ctx context.Context, items []recei
 	// TODO: this is the actual code
 	stg1Prompt, err := buildStage1Prompt(stg1Input)
 	if err != nil {
-		return enrichedItems, err
+		return nil, err
 	}
 
 	stg1Resp := generateContent(client, ctx, stg1Prompt)
 
 	processedResp, err := processResponse[stage1Output](stg1Resp)
 	if err != nil {
-		return enrichedItems, err
+		return nil, err
 	}
 
 	stage2InputList, err := createStage2Input(items, products, processedResp)
 	if err != nil {
-		return enrichedItems, err
+		return nil, err
 	}
 
+	enrichedItems := make([]stage2Output, 0, len(items))
 	// run stage two for each stage2 input
 	for _, input := range stage2InputList {
 		stage2prompt, err := buildStage2Prompt(input)
 		if err != nil {
-			return enrichedItems, err
+			return nil, err
 		}
 
 		stg2Resp := generateContent(client, ctx, stage2prompt)
 		processedResp, err := processResponse[stage2Output](stg2Resp)
 		if err != nil {
-			return enrichedItems, err
+			return nil, err
 		}
 		enrichedItems = append(enrichedItems, processedResp...)
 	}
 
-	// for each stage 2 input do the thing
+	categoryMapping := buildCategoryMapping(enrichedItems)
 
-	return enrichedItems, nil
+	return categoryMapping, nil
+}
+
+func buildCategoryMapping(llmEnrichedData []stage2Output) map[string]CategoryHierarchy {
+	categoryMapping := make(map[string]CategoryHierarchy, len(llmEnrichedData))
+
+	for _, item := range llmEnrichedData {
+		categoryMapping[item.ItemName] = CategoryHierarchy{
+			CostGroup:    item.CostGroup,
+			MainCategory: item.MainCategory,
+			Subcategory:  item.Subcategory,
+			ProductName:  item.ProductName,
+		}
+	}
+
+	return categoryMapping
 }
 
 func createStage2Input(items []receipt.Item, products catalog.ProductCatalog, procesedStage1output []stage1Output) ([]stage2Input, error) {
