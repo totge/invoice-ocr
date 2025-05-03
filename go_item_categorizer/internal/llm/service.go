@@ -19,7 +19,6 @@ func AssignCategoryData(client *genai.Client, ctx context.Context, items []recei
 		Items:      items,
 	}
 
-	// TODO: this is the actual code
 	stg1Prompt, err := buildStage1Prompt(stg1Input)
 	if err != nil {
 		return nil, err
@@ -108,7 +107,6 @@ func createStage2Input(items []receipt.Item, products catalog.ProductCatalog, pr
 	return stage2Inputs, nil
 }
 
-// TODO: optimize this (as this is O(n^2)
 func createItemCostGroupMapping(response []stage1Output) map[string]string {
 	mapping := make(map[string]string, len(response))
 	for _, item := range response {
