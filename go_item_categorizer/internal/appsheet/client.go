@@ -23,13 +23,13 @@ type Client struct {
 	apiKey     string
 }
 
-func (c *Client) ReadRecords(ctx context.Context, table AppSheetTable, tableData TableReader) error {
+func ReadRecords[TargetType any](c *Client, ctx context.Context, table AppSheetTable) ([]TargetType, error) {
 
 	// --- 1. Construct URL for the endpoint ---
 	// TODO: Make it nicer
 	endpointUrl := c.apiBaseUrl.JoinPath(string(table)).JoinPath("Action")
 	// --- 2. Construct Request Body (Consistent "Find" Action) ---
-	requestBody := AppSheetActionRequest{
+	requestBody := AppSheetActionRequest[TargetType]{
 		Action: ActionFind,
 		Properties: map[string]interface{}{
 			// Add default properties or allow passing them via options if needed
@@ -39,13 +39,13 @@ func (c *Client) ReadRecords(ctx context.Context, table AppSheetTable, tableData
 
 	requestBodyBytes, err := json.Marshal(requestBody)
 	if err != nil {
-		return fmt.Errorf("failed to marshal request body: %w", err)
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
 	// --- 3. Create Request ---
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpointUrl.String(), bytes.NewBuffer(requestBodyBytes))
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// --- 4. Set Headers ---
@@ -56,7 +56,7 @@ func (c *Client) ReadRecords(ctx context.Context, table AppSheetTable, tableData
 	// --- 5. Execute Request ---
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to execute request to %s: %w", endpointUrl.Redacted(), err)
+		return nil, fmt.Errorf("failed to execute request to %s: %w", endpointUrl.Redacted(), err)
 	}
 	defer resp.Body.Close()
 
@@ -65,19 +65,18 @@ func (c *Client) ReadRecords(ctx context.Context, table AppSheetTable, tableData
 	if resp.StatusCode != http.StatusOK {
 		// Attempt to read error body for more info
 		bodyBytes, _ := io.ReadAll(resp.Body) // Use io.ReadAll
-		return fmt.Errorf("unexpected status code %d from AppSheet API for table '%s': %s", resp.StatusCode, string(table), string(bodyBytes))
+		return nil, fmt.Errorf("unexpected status code %d from AppSheet API for table '%s': %s", resp.StatusCode, string(table), string(bodyBytes))
 	}
 
-
-	// --- 7. Decode Successful Response using Generic Type ---	
+	// --- 7. Decode Successful Response using Generic Type ---
 	// Use json.NewDecoder for efficiency
-	err = tableData.ReadTable(resp.Body)
-	if err != nil {
-		return err
+	parsedResponse := make([]TargetType, 0, 100)
+	decoder := json.NewDecoder(resp.Body)
+	if err := decoder.Decode(&parsedResponse); err != nil {
+		return nil, fmt.Errorf("failed to decode response body for table read: %w", err)
 	}
 
-	// no error if everything goes well
-	return nil
+	return parsedResponse, nil
 }
 
 func NewClient(baseUrl string, appId string, apiKey string) (*Client, error) {

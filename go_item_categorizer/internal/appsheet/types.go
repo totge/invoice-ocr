@@ -1,11 +1,5 @@
 package appsheet
 
-import (
-	"encoding/json"
-	"fmt"
-	"io"
-)
-
 // AppSheetAction represents the valid actions for the AppSheet API.
 type AppSheetAction string
 type AppSheetTable string
@@ -22,27 +16,10 @@ const (
 )
 
 // AppSheetActionRequest defines the structure for the body of an AppSheet Action API call.
-type AppSheetActionRequest struct {
-	Action     AppSheetAction           `json:"Action"`
-	Properties map[string]interface{}   `json:"Properties,omitempty"`
-	Rows       []map[string]interface{} `json:"Rows,omitempty"` // Used for Add/Edit/Delete, often empty/nil for Find
-}
-
-type AppSheetTableData[T any] struct {
-	Data []T
-}
-
-func (tableData *AppSheetTableData[T]) ReadTable(responseBody io.Reader) error {
-	decoder := json.NewDecoder(responseBody)
-	if err := decoder.Decode(&tableData.Data); err != nil {
-		return fmt.Errorf("failed to decode response body for table read: %w", err)
-	}
-
-	return nil
-}
-
-type TableReader interface {
-	ReadTable(io.Reader) error
+type AppSheetActionRequest[T any] struct {
+	Action     AppSheetAction         `json:"Action"`
+	Properties map[string]interface{} `json:"Properties,omitempty"`
+	Rows       []T                    `json:"Rows,omitempty"` // Used for Add/Edit/Delete, often empty/nil for Find
 }
 
 type Category struct {

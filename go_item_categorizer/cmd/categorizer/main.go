@@ -100,6 +100,7 @@ func main() {
 		log.Fatalf("FATAL: Failed to create Gemini client: %v", err)
 	}
 
+	log.Println("Assigning categories to the items...")
 	enrichedItems, err := llm.AssignCategoryData(geminiClient, ctx, parsedReceipt.Items, productCatalog)
 	if err != nil {
 		log.Fatalf("FATAL: Failure occured during llm interaction: %v", err)
@@ -108,6 +109,7 @@ func main() {
 	for _, item := range enrichedItems{
 		fmt.Println(item)
 	}
+
 
 	// for _, cand := range resp.Candidates {
 	// 	if cand.Content != nil {

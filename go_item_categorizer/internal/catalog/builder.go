@@ -53,16 +53,13 @@ func BuildProductCatalog(ctx context.Context, client *appsheet.Client) (ProductC
 	// --- 2. Fetch Categories from AppSheet ---
 	log.Printf("Fetching categories from table '%s'...", string(appsheet.TableCategories))
 	// Prepare the data structure to hold the results
-	var categoryData appsheet.AppSheetTableData[appsheet.Category]
 
 	// Call the client method, passing the specific table name and the data holder
-	err := client.ReadRecords(ctx, appsheet.TableCategories, &categoryData)
+	categories, err := appsheet.ReadRecords[appsheet.Category](client, ctx, appsheet.TableCategories)
 	if err != nil {
 		// This error includes request errors OR the decoding error IF you fixed ReadRecords
 		log.Fatalf("FATAL: Failed to fetch categories: %v", err)
 	}
-	// Access the data via the struct field
-	categories := categoryData.Data
 
 	categoryMap := make(map[string]appsheet.Category)
 	for _, cat := range categories {
@@ -71,16 +68,13 @@ func BuildProductCatalog(ctx context.Context, client *appsheet.Client) (ProductC
 
 	log.Printf("Fetching expenses from table '%s'...", string(appsheet.TableExpenses))
 	// Prepare the data structure to hold the results
-	var expenseData appsheet.AppSheetTableData[appsheet.Expense]
 
 	// Call the client method, passing the specific table name and the data holder
-	err = client.ReadRecords(ctx, appsheet.TableExpenses, &expenseData)
+	expenses, err := appsheet.ReadRecords[appsheet.Expense](client, ctx, appsheet.TableExpenses)
 	if err != nil {
 		// This error includes request errors OR the decoding error IF you fixed ReadRecords
 		log.Fatalf("FATAL: Failed to fetch expenses: %v", err)
 	}
-	// Access the data via the struct field
-	expenses := expenseData.Data
 
 	// --- 3. Deduplicate Expenses by ProductName + CategoryID ---
 	log.Println("Deduplicating expenses by product name and category ID...")
