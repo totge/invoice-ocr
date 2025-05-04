@@ -54,9 +54,9 @@ func main() {
 
 	// 2. Read the file content
 	log.Printf("Reading receipt data from: %s\n", filePath)
-	jsonData, err := os.ReadFile(filePath) // Reads the whole file into memory
+	jsonData, err := os.Open(filePath) // Reads the whole file into memory
 	if err != nil {
-		log.Fatalf("FATAL: Failed to read file %s: %v", filePath, err)
+		log.Fatalf("FATAL: Failed to open file %s: %v", filePath, err)
 	}
 	// --- End File Reading ---
 
