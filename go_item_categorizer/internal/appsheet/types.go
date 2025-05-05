@@ -1,8 +1,18 @@
 package appsheet
 
+import (
+	"context"
+	"io"
+	"net/http"
+)
+
 // AppSheetAction represents the valid actions for the AppSheet API.
 type AppSheetAction string
 type AppSheetTable string
+
+type AppSheetClient interface {
+	SendRequest(context.Context, AppSheetTable, string, io.Reader) (*http.Response, error)
+}
 
 // Constants defining the supported AppSheet actions.
 const (
@@ -30,10 +40,6 @@ type Category struct {
 	MainCategory string `json:"Kategória"`       // Matches "Kategória" key
 	SubCategory  string `json:"Alkategória"`     // Matches "Alkategória" key
 }
-
-// func (c *Category) ProcessBody(apiResponse []byte) error {
-// 	json.Unmarshal(apiResponse, )
-// }
 
 type Expense struct {
 	RowNumber     string `json:"_RowNumber"`
