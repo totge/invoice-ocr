@@ -48,7 +48,7 @@ func (p *ProductCatalog) GetProductListJSON(costGroup string) ([]byte, error) {
 	return serializedData, nil
 }
 
-func BuildProductCatalog(ctx context.Context, client *appsheet.Client) (ProductCatalog, error) {
+func BuildProductCatalog(ctx context.Context, client appsheet.AppSheetClient) (ProductCatalog, error) {
 
 	// --- 2. Fetch Categories from AppSheet ---
 	log.Printf("Fetching categories from table '%s'...", string(appsheet.TableCategories))

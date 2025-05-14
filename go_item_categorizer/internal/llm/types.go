@@ -2,23 +2,33 @@ package llm
 
 import (
 	"github.com/google/generative-ai-go/genai"
-	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
 )
 
 type GeminiModel string
 
-type prompt struct {
-	systemPrompt *genai.Content
-	taskPrompt   genai.Text
-	inuptData    genai.Text
-	examples     genai.Text
-	outputFormat *genai.Schema
+type Prompt struct {
+	SystemPrompt *genai.Content
+	TaskPrompt   genai.Text
+	InuptData    genai.Text
+	Examples     genai.Text
+	OutputFormat *genai.Schema
+}
+
+type ProductInfo interface {
+	GetCostGroups() []string
+	GetProductListJSON(string) ([]byte, error)
+}
+
+type ItemInfo interface {
+	GetName() string
+	GetPrice() int
+	GetDiscount() int
 }
 
 // stage1Data holds the dynamic data needed for the stage1_cost_group.tmpl template.
 type stage1Input struct {
-	CostGroups []string       // Slice of available cost group names
-	Items      []receipt.Item // Slice of items from the current receipt
+	CostGroups []string   // Slice of available cost group names
+	Items      []ItemInfo // Slice of items from the current receipt
 }
 
 var stage1OutputFormat = &genai.Schema{
@@ -47,7 +57,7 @@ type stage1Output struct {
 
 type stage2Input struct {
 	CostGroup string
-	Items     []receipt.Item
+	Items     []ItemInfo
 	Products  string
 }
 

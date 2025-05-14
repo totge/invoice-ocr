@@ -1,17 +1,18 @@
 package llm
 
 import (
-	"context"
 	"encoding/json"
 	"log"
 
 	"github.com/google/generative-ai-go/genai"
-	"github.com/totge/invoice-oc/go_item_categorizer/internal/catalog"
-	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
 )
 
-func AssignCategoryData(client *genai.Client, ctx context.Context, items []receipt.Item, products catalog.ProductCatalog) (map[string]CategoryHierarchy, error) {
+// TODO: This is meant to be the high level api to interact with this package
+// TODO: It should only call functions and methods and not do any other work
+// TODO: Anything that is more than that should have its delegated, testable function or method
+func AssignCategoryData(client ContentGenerator, items []ItemInfo, products ProductInfo) (map[string]CategoryHierarchy, error) {
 
+	// --- 1. Prepare the inputs and prompt for stage1
 	costGroups := products.GetCostGroups()
 
 	stg1Input := stage1Input{
@@ -24,18 +25,26 @@ func AssignCategoryData(client *genai.Client, ctx context.Context, items []recei
 		return nil, err
 	}
 
-	stg1Resp := generateContent(client, ctx, stg1Prompt)
+	// --- 2. Generate the llm output for stage2
+	// stg1Resp := generateContent(client, ctx, stg1Prompt)
+	stg1Resp, err := client.GenerateContent(stg1Prompt)
+	if err != nil {
+		return nil, err
+	}
 
+	// --- 3. Process the stage 1 output
 	processedResp, err := processResponse[stage1Output](stg1Resp)
 	if err != nil {
 		return nil, err
 	}
 
+	// --- 4. Prepare the stage 2 inputs
 	stage2InputList, err := createStage2Input(items, products, processedResp)
 	if err != nil {
 		return nil, err
 	}
 
+	// --- 5. Make the prompt and generate llm output for all stage 2 input
 	enrichedItems := make([]stage2Output, 0, len(items))
 	// run stage two for each stage2 input
 	for _, input := range stage2InputList {
@@ -44,7 +53,10 @@ func AssignCategoryData(client *genai.Client, ctx context.Context, items []recei
 			return nil, err
 		}
 
-		stg2Resp := generateContent(client, ctx, stage2prompt)
+		stg2Resp, err := client.GenerateContent(stage2prompt)
+		if err != nil {
+			return nil, err
+		}
 		processedResp, err := processResponse[stage2Output](stg2Resp)
 		if err != nil {
 			return nil, err
@@ -52,6 +64,7 @@ func AssignCategoryData(client *genai.Client, ctx context.Context, items []recei
 		enrichedItems = append(enrichedItems, processedResp...)
 	}
 
+	// --- 6. Build the final return value from the stage2 output
 	categoryMapping := buildCategoryMapping(enrichedItems)
 
 	return categoryMapping, nil
@@ -72,21 +85,21 @@ func buildCategoryMapping(llmEnrichedData []stage2Output) map[string]CategoryHie
 	return categoryMapping
 }
 
-func createStage2Input(items []receipt.Item, products catalog.ProductCatalog, procesedStage1output []stage1Output) ([]stage2Input, error) {
+func createStage2Input(items []ItemInfo, products ProductInfo, procesedStage1output []stage1Output) ([]stage2Input, error) {
 
 	costGroupMapping := createItemCostGroupMapping(procesedStage1output)
 
-	stage2GroupedItems := make(map[string][]receipt.Item)
+	stage2GroupedItems := make(map[string][]ItemInfo)
 
 	// grouping original items by cost group
 	for _, item := range items {
-		itemCostGroup := costGroupMapping[item.Name]
+		itemCostGroup := costGroupMapping[item.GetName()]
 
 		// adding slice for new cost groups
 		if itemList, ok := stage2GroupedItems[itemCostGroup]; ok {
 			stage2GroupedItems[itemCostGroup] = append(itemList, item)
 		} else {
-			stage2GroupedItems[itemCostGroup] = []receipt.Item{item}
+			stage2GroupedItems[itemCostGroup] = []ItemInfo{item}
 		}
 	}
 
@@ -136,23 +149,4 @@ func processResponse[TargetT any](response *genai.GenerateContentResponse) ([]Ta
 		}
 	}
 	return processedOutput, nil
-}
-
-// helper function to interact with the llm
-func generateContent(client *genai.Client, ctx context.Context, p prompt) *genai.GenerateContentResponse {
-	// TODO: model type should be some kind of config parameter
-	model := client.GenerativeModel("gemini-2.0-flash")
-	// model.SetMaxOutputTokens(100)
-	model.ResponseMIMEType = "application/json"
-
-	model.ResponseSchema = p.outputFormat
-	model.SystemInstruction = p.systemPrompt
-
-	// model.SystemInstruction()
-	resp, err := model.GenerateContent(ctx, p.taskPrompt, p.examples, p.inuptData)
-	if err != nil {
-		// TODO: This is probably bad, should return to caller
-		log.Fatal(err)
-	}
-	return resp // helper function for printing content parts
 }

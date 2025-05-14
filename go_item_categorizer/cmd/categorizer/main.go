@@ -9,14 +9,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/google/generative-ai-go/genai"
 	"github.com/joho/godotenv"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/catalog"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/categorizer"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/llm"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
-	"google.golang.org/api/option"
 )
 
 // Config struct to hold application configuration
@@ -67,6 +65,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("FATAL: Failed to parse receipt data from %s: %v", filePath, err)
 	}
+
+	itemsToProcess := make([]llm.ItemInfo, len(parsedReceipt.Items))
+
+	for i := range parsedReceipt.Items {
+		itemsToProcess[i] = &parsedReceipt.Items[i]
+	}
 	// --- End Parsing ---
 
 	log.Printf("Successfully parsed receipt from %s with %d items.\n",
@@ -97,13 +101,12 @@ func main() {
 
 	// --- 5. Prompt genai to get the categorized items
 	ctx = context.Background()
-	geminiClient, err := genai.NewClient(ctx, option.WithAPIKey(config.GeminiApiKey))
+	geminiClient, err := llm.NewClient(ctx, config.GeminiApiKey)
 	if err != nil {
 		log.Fatalf("FATAL: Failed to create Gemini client: %v", err)
 	}
-
 	log.Println("Assigning categories to the items...")
-	categoryMapping, err := llm.AssignCategoryData(geminiClient, ctx, parsedReceipt.Items, productCatalog)
+	categoryMapping, err := llm.AssignCategoryData(geminiClient, itemsToProcess, &productCatalog)
 	if err != nil {
 		log.Fatalf("FATAL: Failure occured during llm interaction: %v", err)
 	}
