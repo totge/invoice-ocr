@@ -1,0 +1,50 @@
+version: '3'
+
+# Variables that can be used throughout the Taskfile
+vars:
+  # The name of your binary
+  BINARY_NAME: categorizer
+  # The path to your main cmd package
+  CMD_PATH: ./cmd/categorizer
+  # Output directory for the binary (optional, default is current dir for 'go build')
+  OUTPUT_DIR: ./bin
+
+tasks:
+  default:
+    desc: "Builds the application (default task)."
+    cmds:
+      - task: build
+
+  build:
+    desc: "Builds the application binary."
+    # Optional: uncomment and create ./bin directory if you want output there
+    cmds:
+     - go build -v -o {{.OUTPUT_DIR}}/{{.BINARY_NAME}} {{.CMD_PATH}}
+    sources: # Re-run this task if any of these files change
+      - "{{.CMD_PATH}}/**/*.go"
+      - "internal/**/*.go"
+      - "go.mod"
+      - "go.sum"
+    generates: # Files this task is expected to create
+      - "{{.OUTPUT_DIR}}/{{.BINARY_NAME}}"
+
+  run:
+    desc: "Builds and runs the application. Pass arguments after --, e.g., task run -- --file /path/to.json"
+    deps: [build]
+    cmds:
+      - "{{.OUTPUT_DIR}}/{{.BINARY_NAME}} {{.CLI_ARGS}}"
+
+  clean:
+    desc: "Removes the built binary and other build artifacts."
+    cmds:
+      - rm -f {{.OUTPUT_DIR}}/{{.BINARY_NAME}}
+
+  test:
+    desc: "Runs unit tests."
+    cmds:
+      - go test -v ./... # Run tests in all subdirectories
+
+  fmt:
+    desc: "Formats Go source files."
+    cmds:
+      - go fmt ./...
