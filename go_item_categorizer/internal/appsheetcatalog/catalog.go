@@ -13,7 +13,7 @@ type Catalog struct {
 }
 
 func (c *Catalog) fetchCategories(ctx context.Context) (map[string]appsheet.Category, error) {
-	categories, err := appsheet.ReadRecords[appsheet.Category](c.Client, ctx, appsheet.TableCategories)
+	categories, err := c.Client.ReadCategories(ctx)
 	if err != nil {
 		// TODO: add context to the error
 		return nil, err
@@ -29,7 +29,7 @@ func (c *Catalog) fetchCategories(ctx context.Context) (map[string]appsheet.Cate
 
 // TODO: should it return all the expenses with all the expense related data? Is the naming ok?
 func (c *Catalog) fetchExpenses(ctx context.Context) ([]appsheet.Expense, error) {
-	expenses, err := appsheet.ReadRecords[appsheet.Expense](c.Client, ctx, appsheet.TableExpenses)
+	expenses, err := c.Client.ReadExpenses(ctx)
 	if err != nil {
 		// TODO: add context to the error
 		return nil, err

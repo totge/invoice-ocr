@@ -2,8 +2,6 @@ package appsheet
 
 import (
 	"context"
-	"io"
-	"net/http"
 )
 
 // AppSheetAction represents the valid actions for the AppSheet API.
@@ -11,7 +9,9 @@ type AppSheetAction string
 type AppSheetTable string
 
 type AppSheetClient interface {
-	SendRequest(context.Context, AppSheetTable, string, io.Reader) (*http.Response, error)
+	ReadExpenses(context.Context) ([]Expense, error)
+	ReadCategories(context.Context) ([]Category, error)
+	WriteExpenseStage(context.Context, []ExpenseStage) error
 }
 
 // Constants defining the supported AppSheet actions.
@@ -26,11 +26,18 @@ const (
 	TableExpenseStage AppSheetTable = "expense_stage"
 )
 
+// // AppSheetActionRequest defines the structure for the body of an AppSheet Action API call.
+// type AppSheetActionRequest[T any] struct {
+// 	Action     AppSheetAction         `json:"Action"`
+// 	Properties map[string]interface{} `json:"Properties,omitempty"`
+// 	Rows       []T                    `json:"Rows,omitempty"` // Used for Add/Edit/Delete, often empty/nil for Find
+// }
+
 // AppSheetActionRequest defines the structure for the body of an AppSheet Action API call.
-type AppSheetActionRequest[T any] struct {
+type AppSheetActionRequest struct {
 	Action     AppSheetAction         `json:"Action"`
 	Properties map[string]interface{} `json:"Properties,omitempty"`
-	Rows       []T                    `json:"Rows,omitempty"` // Used for Add/Edit/Delete, often empty/nil for Find
+	Rows       any                    `json:"Rows,omitempty"` // Used for Add/Edit/Delete, often empty/nil for Find
 }
 
 type Category struct {

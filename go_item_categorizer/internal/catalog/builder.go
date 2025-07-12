@@ -55,7 +55,8 @@ func BuildProductCatalog(ctx context.Context, client appsheet.AppSheetClient) (P
 	// Prepare the data structure to hold the results
 
 	// Call the client method, passing the specific table name and the data holder
-	categories, err := appsheet.ReadRecords[appsheet.Category](client, ctx, appsheet.TableCategories)
+	
+	categories, err := client.ReadCategories(ctx)
 	if err != nil {
 		// This error includes request errors OR the decoding error IF you fixed ReadRecords
 		log.Fatalf("FATAL: Failed to fetch categories: %v", err)
@@ -70,7 +71,7 @@ func BuildProductCatalog(ctx context.Context, client appsheet.AppSheetClient) (P
 	// Prepare the data structure to hold the results
 
 	// Call the client method, passing the specific table name and the data holder
-	expenses, err := appsheet.ReadRecords[appsheet.Expense](client, ctx, appsheet.TableExpenses)
+	expenses, err := client.ReadExpenses(ctx)
 	if err != nil {
 		// This error includes request errors OR the decoding error IF you fixed ReadRecords
 		log.Fatalf("FATAL: Failed to fetch expenses: %v", err)
