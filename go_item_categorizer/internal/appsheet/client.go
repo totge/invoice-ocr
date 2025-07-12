@@ -72,7 +72,7 @@ func (c *Client) doRequest(ctx context.Context, table AppSheetTable, action AppS
 }
 
 func (c *Client) buildRequestBody(action AppSheetAction, data any) (*bytes.Buffer, error) {
-	requestBody := AppSheetActionRequestv2{
+	requestBody := AppSheetActionRequest{
 		Action: action,
 		Properties: map[string]interface{}{
 			// Add default properties or allow passing them via options if needed
