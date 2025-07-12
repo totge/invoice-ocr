@@ -79,7 +79,7 @@ func ReadRecords[TargetType any](c AppSheetClient, ctx context.Context, table Ap
 
 	// --- 4. Decode Successful Response using Generic Type ---
 	// Use json.NewDecoder for efficiency
-	parsedResponse := make([]TargetType, 0, 100)
+	parsedResponse := make([]TargetType, 0, 200)
 	decoder := json.NewDecoder(resp.Body)
 	if err := decoder.Decode(&parsedResponse); err != nil {
 		return nil, fmt.Errorf("failed to decode response body for table read: %w", err)
