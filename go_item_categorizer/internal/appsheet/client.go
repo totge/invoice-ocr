@@ -26,7 +26,7 @@ type Client struct {
 // Handles sending a request and processing the response from the Appsheet API
 // 'rows' represent a slice of structs that can be marshalled to the targeted table schema for write requests
 // 'decodeTarget' represents a slice structs of the expected type, mapping to the table schema for read requests
-func (c *Client) doRequest(ctx context.Context, table AppSheetTable, action AppSheetAction, rows any, decodeTarget any) error {
+func (c *Client) doRequest(ctx context.Context, table appSheetTable, action appSheetAction, rows any, decodeTarget any) error {
 
 	// --- 1. Build the url for the request
 	endpointUrl := c.apiBaseUrl.JoinPath(string(table)).JoinPath("Action")
@@ -71,8 +71,8 @@ func (c *Client) doRequest(ctx context.Context, table AppSheetTable, action AppS
 	return nil
 }
 
-func (c *Client) buildRequestBody(action AppSheetAction, data any) (*bytes.Buffer, error) {
-	requestBody := AppSheetActionRequest{
+func (c *Client) buildRequestBody(action appSheetAction, data any) (*bytes.Buffer, error) {
+	requestBody := appSheetActionRequest{
 		Action: action,
 		Properties: map[string]interface{}{
 			// Add default properties or allow passing them via options if needed
@@ -92,7 +92,7 @@ func (c *Client) buildRequestBody(action AppSheetAction, data any) (*bytes.Buffe
 func (c *Client) ReadExpenses(ctx context.Context) ([]Expense, error) {
 	var expenses []Expense
 
-	err := c.doRequest(ctx, TableExpenses, ActionFind, nil, &expenses)
+	err := c.doRequest(ctx, TableExpenses, actionFind, nil, &expenses)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (c *Client) ReadExpenses(ctx context.Context) ([]Expense, error) {
 
 func (c *Client) ReadCategories(ctx context.Context) ([]Category, error) {
 	var categories []Category
-	err := c.doRequest(ctx, TableCategories, ActionFind, nil, &categories)
+	err := c.doRequest(ctx, TableCategories, actionFind, nil, &categories)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (c *Client) ReadCategories(ctx context.Context) ([]Category, error) {
 }
 
 func (c *Client) WriteExpenseStage(ctx context.Context, rows []ExpenseStage) error {
-	err := c.doRequest(ctx, TableExpenseStage, ActionAdd, rows, nil)
+	err := c.doRequest(ctx, TableExpenseStage, actionAdd, rows, nil)
 	if err != nil {
 		return err
 	}

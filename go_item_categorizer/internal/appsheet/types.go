@@ -4,9 +4,9 @@ import (
 	"context"
 )
 
-// AppSheetAction represents the valid actions for the AppSheet API.
-type AppSheetAction string
-type AppSheetTable string
+// appSheetAction represents the valid actions for the AppSheet API.
+type appSheetAction string
+type appSheetTable string
 
 type AppSheetClient interface {
 	ReadExpenses(context.Context) ([]Expense, error)
@@ -16,26 +16,20 @@ type AppSheetClient interface {
 
 // Constants defining the supported AppSheet actions.
 const (
-	// ActionFind instructs the API to find records.
-	ActionFind AppSheetAction = "Find"
-	// ActionAdd instructs the API to add records.
-	ActionAdd AppSheetAction = "Add"
+	// actionFind instructs the API to find records.
+	actionFind appSheetAction = "Find"
+	// actionAdd instructs the API to add records.
+	actionAdd appSheetAction = "Add"
 
-	TableCategories   AppSheetTable = "Kategóriák"
-	TableExpenses     AppSheetTable = "Kiadások"
-	TableExpenseStage AppSheetTable = "expense_stage"
+	//TODO: do not export these - once the old catalog packages is removed
+	TableCategories   appSheetTable = "Kategóriák"
+	TableExpenses     appSheetTable = "Kiadások"
+	TableExpenseStage appSheetTable = "expense_stage"
 )
 
-// // AppSheetActionRequest defines the structure for the body of an AppSheet Action API call.
-// type AppSheetActionRequest[T any] struct {
-// 	Action     AppSheetAction         `json:"Action"`
-// 	Properties map[string]interface{} `json:"Properties,omitempty"`
-// 	Rows       []T                    `json:"Rows,omitempty"` // Used for Add/Edit/Delete, often empty/nil for Find
-// }
-
-// AppSheetActionRequest defines the structure for the body of an AppSheet Action API call.
-type AppSheetActionRequest struct {
-	Action     AppSheetAction         `json:"Action"`
+// appSheetActionRequest defines the structure for the body of an AppSheet Action API call.
+type appSheetActionRequest struct {
+	Action     appSheetAction         `json:"Action"`
 	Properties map[string]interface{} `json:"Properties,omitempty"`
 	Rows       any                    `json:"Rows,omitempty"` // Used for Add/Edit/Delete, often empty/nil for Find
 }
