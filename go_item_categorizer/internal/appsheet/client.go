@@ -33,12 +33,12 @@ func (c *Client) doRequest(ctx context.Context, table appSheetTable, action appS
 	// --- 2. Build the request body
 	body, err := c.buildRequestBody(action, rows)
 	if err != nil {
-		return fmt.Errorf("failed to build request body: %w", err)
+		return fmt.Errorf("failed to build apsheet request body: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpointUrl.String(), body)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create http request object: %w", err)
 	}
 	// --- 3. Set Headers Expected by the AppSheet API
 	req.Header.Set("Content-Type", "application/json")
@@ -48,24 +48,23 @@ func (c *Client) doRequest(ctx context.Context, table appSheetTable, action appS
 	// --- 4. Execute Request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("http client failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// --- 5. Handle unsucessful request response
 	if resp.StatusCode != http.StatusOK {
-		respBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
+		// ignore error, main information in the status code
+		respBody, _ := io.ReadAll(resp.Body)
+		
 		// Attempt to read error body for more info
-		return fmt.Errorf("unexpected status code %d from AppSheet API for table '%s': %s", resp.StatusCode, string(table), string(respBody))
+		return fmt.Errorf("appsheet API returned non-OK status %d from AppSheet API for table '%s': %s", resp.StatusCode, string(table), string(respBody))
 	}
 
 	// --- 6. Decode response to the target
 	if decodeTarget != nil {
 		if err := json.NewDecoder(resp.Body).Decode(decodeTarget); err != nil {
-			return fmt.Errorf("failed to decode successful response body: %w", err)
+			return fmt.Errorf("failed to decode successful appsheet response body: %w", err)
 		}
 	}
 	return nil
@@ -94,7 +93,7 @@ func (c *Client) ReadExpenses(ctx context.Context) ([]Expense, error) {
 
 	err := c.doRequest(ctx, TableExpenses, actionFind, nil, &expenses)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not read expenses from appsheet: %w", err)
 	}
 
 	return expenses, nil
@@ -104,7 +103,7 @@ func (c *Client) ReadCategories(ctx context.Context) ([]Category, error) {
 	var categories []Category
 	err := c.doRequest(ctx, TableCategories, actionFind, nil, &categories)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not read categories from appsheet: %w", err)
 	}
 
 	return categories, nil
@@ -113,7 +112,7 @@ func (c *Client) ReadCategories(ctx context.Context) ([]Category, error) {
 func (c *Client) WriteExpenseStage(ctx context.Context, rows []ExpenseStage) error {
 	err := c.doRequest(ctx, TableExpenseStage, actionAdd, rows, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not write expenses to the stage in appsheet: %w", err)
 	}
 
 	return nil
