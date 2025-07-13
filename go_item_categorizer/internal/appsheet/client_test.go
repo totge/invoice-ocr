@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -127,5 +128,33 @@ func TestClient_ReadCategories_Success(t *testing.T) {
 	}
 	if categories[1].CostGroup != "Utilities" {
 		t.Errorf("Expected second cost group to be 'Utilities', got '%s'", categories[1].CostGroup)
+	}
+}
+
+func TestClient_ReadCategories_APIError(t *testing.T) {
+	// 1. Setup a Mock Server that returns an error
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Send back a 500 Internal Server Error status code
+		w.WriteHeader(http.StatusInternalServerError)
+		// Write an error message in the body, which our client should capture
+		w.Write([]byte("Something went wrong on the server"))
+	}))
+	defer server.Close()
+
+	// 2. Create the Client
+	client, _ := NewClient(server.URL, "fake-app-id", "fake-api-key")
+
+	// 3. Call the method
+	_, err := client.ReadCategories(context.Background())
+
+	// 4. Assert that an error WAS returned
+	if err == nil {
+		t.Fatal("ReadCategories() was expected to return an error, but it didn't")
+	}
+
+	// Optional: Check if the error message contains the expected details
+	expectedErrorSubstring := "status code 500"
+	if !strings.Contains(err.Error(), expectedErrorSubstring) {
+		t.Errorf("Expected error message to contain '%s', but got: %v", expectedErrorSubstring, err)
 	}
 }
