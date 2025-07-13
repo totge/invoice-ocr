@@ -2,6 +2,7 @@ package appsheetcatalog
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/domain"
@@ -15,8 +16,7 @@ type Catalog struct {
 func (c *Catalog) fetchCategories(ctx context.Context) (map[string]appsheet.Category, error) {
 	categories, err := c.Client.ReadCategories(ctx)
 	if err != nil {
-		// TODO: add context to the error
-		return nil, err
+		return nil, fmt.Errorf("could not fetch categories for catalog build: %w", err)
 	}
 
 	categoryMap := make(map[string]appsheet.Category)
@@ -27,12 +27,10 @@ func (c *Catalog) fetchCategories(ctx context.Context) (map[string]appsheet.Cate
 	return categoryMap, nil
 }
 
-// TODO: should it return all the expenses with all the expense related data? Is the naming ok?
 func (c *Catalog) fetchExpenses(ctx context.Context) ([]appsheet.Expense, error) {
 	expenses, err := c.Client.ReadExpenses(ctx)
 	if err != nil {
-		// TODO: add context to the error
-		return nil, err
+		return nil, fmt.Errorf("could not fetch expenses for catalog build: %w", err)
 	}
 
 	return expenses, nil
@@ -70,25 +68,20 @@ func (c *Catalog) buildProductList(categoryMap map[string]appsheet.Category, exp
 	return productList
 }
 
-func (c *Catalog) ListProducts() ([]domain.ProductClassification, error) {
+func (c *Catalog) ListProducts(ctx context.Context) ([]domain.ProductClassification, error) {
 
 	// if product list is cached, just return it
 	if c.productList != nil {
 		return c.productList, nil
 	}
 
-	// create product list, when cache is empty
-	ctx := context.Background()
-
 	categories, err := c.fetchCategories(ctx)
 	if err != nil {
-		// TODO: add context to the error
 		return nil, err
 	}
 
 	expenseList, err := c.fetchExpenses(ctx)
 	if err != nil {
-		// TODO: add context to the error
 		return nil, err
 	}
 
