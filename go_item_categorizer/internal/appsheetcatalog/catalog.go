@@ -3,6 +3,7 @@ package appsheetcatalog
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/domain"
@@ -11,6 +12,8 @@ import (
 type Catalog struct {
 	Client      *appsheet.Client
 	productList []domain.ProductClassification
+	initOnce    sync.Once
+	initErr     error
 }
 
 func (c *Catalog) fetchCategories(ctx context.Context) (map[string]appsheet.Category, error) {
@@ -67,25 +70,26 @@ func (c *Catalog) buildProductList(categoryMap map[string]appsheet.Category, exp
 
 	return productList
 }
-
-func (c *Catalog) ListProducts(ctx context.Context) ([]domain.ProductClassification, error) {
-
-	// if product list is cached, just return it
-	if c.productList != nil {
-		return c.productList, nil
-	}
-
+func (c *Catalog) init(ctx context.Context) {
 	categories, err := c.fetchCategories(ctx)
 	if err != nil {
-		return nil, err
+		c.initErr = err
 	}
 
 	expenseList, err := c.fetchExpenses(ctx)
 	if err != nil {
-		return nil, err
+		c.initErr = err
 	}
 
 	productList := c.buildProductList(categories, expenseList)
 
-	return productList, nil
+	c.productList = productList
+}
+
+func (c *Catalog) ListProducts(ctx context.Context) ([]domain.ProductClassification, error) {
+	c.initOnce.Do(func() {
+		c.init(ctx)
+	})
+
+	return c.productList, c.initErr
 }
