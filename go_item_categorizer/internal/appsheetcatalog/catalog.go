@@ -9,15 +9,21 @@ import (
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/domain"
 )
 
+type DataSource interface {
+	ReadCategories(ctx context.Context) ([]appsheet.Category, error)
+	ReadExpenses(ctx context.Context) ([]appsheet.Expense, error)
+}
+
+// Catalog builds and caches a list of product classifications from a data source.
 type Catalog struct {
-	Client      *appsheet.Client
+	source      DataSource
 	productList []domain.ProductClassification
 	initOnce    sync.Once
 	initErr     error
 }
 
 func (c *Catalog) fetchCategories(ctx context.Context) (map[string]appsheet.Category, error) {
-	categories, err := c.Client.ReadCategories(ctx)
+	categories, err := c.source.ReadCategories(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch categories for catalog build: %w", err)
 	}
@@ -31,7 +37,7 @@ func (c *Catalog) fetchCategories(ctx context.Context) (map[string]appsheet.Cate
 }
 
 func (c *Catalog) fetchExpenses(ctx context.Context) ([]appsheet.Expense, error) {
-	expenses, err := c.Client.ReadExpenses(ctx)
+	expenses, err := c.source.ReadExpenses(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch expenses for catalog build: %w", err)
 	}
