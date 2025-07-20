@@ -99,3 +99,13 @@ func (c *Catalog) ListProducts(ctx context.Context) ([]domain.ProductClassificat
 
 	return c.productList, c.initErr
 }
+
+// New is the constructor for the Catalog.
+// It takes any type that satisfies the DataSource interface and returns a ready-to-use Catalog.
+func New(source DataSource) *Catalog {
+	return &Catalog{
+		source: source,
+		// The other fields (initOnce, productList, initErr) are automatically
+		// set to their correct zero values.
+	}
+}
