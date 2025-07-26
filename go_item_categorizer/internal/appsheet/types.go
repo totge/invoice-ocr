@@ -35,16 +35,16 @@ type appSheetActionRequest struct {
 }
 
 type Category struct {
-	RowNumber    string `json:"_RowNumber"`      // Matches "_RowNumber" key
-	CategoryId   string `json:"Kategória ID"`    // Matches "Kategória ID" key
-	CostGroup    string `json:"Költség csoport"` // Matches "Költség csoport" key
-	MainCategory string `json:"Kategória"`       // Matches "Kategória" key
-	SubCategory  string `json:"Alkategória"`     // Matches "Alkategória" key
+	RowNumber    string `json:"_RowNumber,omitempty"` // Matches "_RowNumber" key
+	CategoryId   string `json:"Kategória ID"`         // Matches "Kategória ID" key
+	CostGroup    string `json:"Költség csoport"`      // Matches "Költség csoport" key
+	MainCategory string `json:"Kategória"`            // Matches "Kategória" key
+	SubCategory  string `json:"Alkategória"`          // Matches "Alkategória" key
 }
 
 type Expense struct {
-	RowNumber     string `json:"_RowNumber"`
-	Id            string `json:"ID"`
+	RowNumber     string `json:"_RowNumber,omitempty"`
+	Id            string `json:"ID,omitempty"`
 	EntryDate     string `json:"Rögzítés dátum"`
 	SameDayEntry  string `json:"Mai rögzítés"`
 	ExpenseDate   string `json:"Kiadás dátum"`
@@ -60,11 +60,11 @@ type Expense struct {
 }
 
 type ExpenseStage struct {
-	RowNumber    string `json:"_RowNumber"`
-	Id           string `json:"ID"`
+	RowNumber    string `json:"_RowNumber,omitempty"`
+	Id           string `json:"ID,omitempty"`
 	ReceiptId    string `json:"Vásárlás ID"`
 	ExpenseDate  string `json:"Vásárlás dátum"`
-	CategoryId   string `json:"Kategória ID"`
+	CategoryId   string `json:"Kategória ID,omitempty"`
 	CostGroup    string `json:"Költség csoport"`
 	MainCategory string `json:"Kategória"`
 	SubCategory  string `json:"Alkategória"`
