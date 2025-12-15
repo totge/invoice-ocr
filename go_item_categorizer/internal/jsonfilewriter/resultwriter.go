@@ -8,12 +8,15 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/domain"
 )
 
 type Writer struct {
 	filePath string
 }
+
+var _ app.ResultWriter = (*Writer)(nil)
 
 // New validates the path and returns a writer ready to be used.
 func New(filePath string) (*Writer, error) {
@@ -62,7 +65,7 @@ func (w *Writer) WriteResult(ctx context.Context, receipt *domain.CategorizedRec
 	default:
 		// Context is still valid, proceed.
 	}
-	
+
 	// File operations are now done here. We are confident this will
 	// likely succeed because of the checks in New().
 	file, err := os.Create(w.filePath)

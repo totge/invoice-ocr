@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/domain"
 )
@@ -17,20 +18,22 @@ type Writer struct {
 	client StageWriter
 }
 
+var _ app.ResultWriter = (*Writer)(nil)
+
 func (w *Writer) WriteResult(ctx context.Context, receipt *domain.CategorizedReceipt) error {
 	stagedExpenses := make([]appsheet.ExpenseStage, 0, len(receipt.Items))
 
 	for _, item := range receipt.Items {
 		expense := appsheet.ExpenseStage{
-			ReceiptId: receipt.Timestamp + " - " + strconv.Itoa(receipt.ParsedTotal) + " HUF",
-			ExpenseDate: receipt.Timestamp,
-			CostGroup: item.CostGroup,
+			ReceiptId:    receipt.Timestamp + " - " + strconv.Itoa(receipt.ParsedTotal) + " HUF",
+			ExpenseDate:  receipt.Timestamp,
+			CostGroup:    item.CostGroup,
 			MainCategory: item.MainCategory,
-			SubCategory: item.SubCategory,
-			Name: item.ProductName,
-			Amount: item.Price,
+			SubCategory:  item.SubCategory,
+			Name:         item.ProductName,
+			Amount:       item.Price,
 			OriginalName: item.ItemName,
-			Approved: false,
+			Approved:     false,
 		}
 		stagedExpenses = append(stagedExpenses, expense)
 	}

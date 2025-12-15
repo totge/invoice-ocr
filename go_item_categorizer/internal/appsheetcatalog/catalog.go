@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/domain"
 )
@@ -21,6 +22,8 @@ type Catalog struct {
 	initOnce    sync.Once
 	initErr     error
 }
+
+var _ app.ProductLister = (*Catalog)(nil)
 
 func (c *Catalog) fetchCategories(ctx context.Context) (map[string]appsheet.Category, error) {
 	categories, err := c.source.ReadCategories(ctx)

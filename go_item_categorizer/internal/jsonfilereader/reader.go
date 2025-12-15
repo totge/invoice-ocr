@@ -1,11 +1,13 @@
 package jsonfilereader
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log"
 	"os"
 
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/domain"
 )
 
@@ -13,7 +15,9 @@ type Reader struct {
 	filePath string
 }
 
-func (r *Reader) ReadReceipt() (*domain.Receipt, error) {
+var _ app.ReceiptReader = (*Reader)(nil)
+
+func (r *Reader) ReadReceipt(ctx context.Context) (*domain.Receipt, error) {
 	jsonData, err := os.Open(r.filePath)
 	// TODO: add context to the error
 	if err != nil {
@@ -32,7 +36,7 @@ func (r *Reader) ReadReceipt() (*domain.Receipt, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &receipt, nil
 }
 
