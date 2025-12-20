@@ -40,6 +40,6 @@ func (r *Reader) ReadReceipt(ctx context.Context) (*domain.Receipt, error) {
 	return &receipt, nil
 }
 
-func NewReader(filePath string) Reader {
-	return Reader{filePath: filePath}
+func NewReader(filePath string) *Reader {
+	return &Reader{filePath: filePath}
 }
