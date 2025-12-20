@@ -2,6 +2,7 @@ package llmcategorizer
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -108,17 +109,22 @@ func (pb *promptBuilder) buildStage1Prompt(items []domain.Item, allCostGroups []
 // buildStage2Prompt creates the prompt for the detailed product matching task.
 func (pb *promptBuilder) buildStage2Prompt(costGroup string, itemsInGroup []domain.Item, productCandidates []domain.ProductClassification) (llm.Prompt, error) {
 	taskTemplateData := struct {
-		costGroup string
+		CostGroup string
 	}{
-		costGroup: costGroup,
+		CostGroup: costGroup,
+	}
+
+	serializedProducts, err := json.Marshal(productCandidates)
+	if err != nil {
+		return llm.Prompt{}, fmt.Errorf("failed to marshal products for stage2 templates for '%s' cost group: %w", costGroup, err)
 	}
 
 	inputTemplateData := struct {
 		Items      []domain.Item
-		Candidates []domain.ProductClassification
+		Candidates string
 	}{
 		Items:      itemsInGroup,
-		Candidates: productCandidates,
+		Candidates: string(serializedProducts),
 	}
 
 	// Render each part of the prompt individually.

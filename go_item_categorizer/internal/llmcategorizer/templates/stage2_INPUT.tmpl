@@ -1,10 +1,10 @@
 INPUT:
 Items to match:
 {{- range $index, $item := .Items }}
-{{ add $index 1 }}. "{{ $item.Name }}"
+{{ add $index 1 }}. "{{ $item.ItemName }}"
 {{- end }}
 
 Product list as a JSON list:
 ```json
-{{ .Products }}
+{{ .Candidates }}
 ```
