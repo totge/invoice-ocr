@@ -1,195 +1,78 @@
-package main // Declares this as an executable program
+package main
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"log"
 	"os"
-	"strconv"
-	"time"
 
-	"github.com/joho/godotenv"
-	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
-	"github.com/totge/invoice-oc/go_item_categorizer/internal/catalog"
-	"github.com/totge/invoice-oc/go_item_categorizer/internal/categorizer"
-	"github.com/totge/invoice-oc/go_item_categorizer/internal/llm"
-	"github.com/totge/invoice-oc/go_item_categorizer/internal/receipt"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/cli"
 )
 
-// Config struct to hold application configuration
-type Config struct {
-	GeminiApiKey    string
-	AppSheetApiKey  string
-	AppSheetAppId   string
-	AppSheetBaseUrl string // Optional, might have a default
-}
-
-// main is the entry point of the application
 func main() {
-	fmt.Println("Initializing application...")
 
-	// loadig environment variables from .env file
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
+	if len(os.Args) < 2 {
+		printUsage()
 		os.Exit(1)
 	}
 
-	config, err := loadConfig()
-	if err != nil {
-		log.Fatal(err)
+	command := os.Args[1] // The first argument after the program name is the command
+
+	// os.Args[2:] will be the arguments for the specific command
+	args := os.Args[2:]
+
+	var err error
+	switch command {
+	case "process":
+		err = cli.RunProcessCommand(args)
+	// case "another":
+	//  handleAnotherCommand(args)
+	case "help", "--help", "-h":
+		printUsage()
+	default:
+		fmt.Fprintf(os.Stderr, "Error: Unknown command '%s'\n\n", command)
+		printUsage()
 		os.Exit(1)
 	}
 
-	fmt.Println(config.AppSheetBaseUrl)
-
-	fmt.Println("Receipt Categorizer Starting...")
-
-	// --- File Reading Responsibility (in main) ---
-	// 1. Get file path (e.g., hardcoded for now, later from flags)
-	filePath := "./testdata/16000333862025032623918.json" // Relative to execution dir
-
-	// 2. Read the file content
-	log.Printf("Reading receipt data from: %s\n", filePath)
-	jsonData, err := os.Open(filePath) // Reads the whole file into memory
 	if err != nil {
-		log.Fatalf("FATAL: Failed to open file %s: %v", filePath, err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
-	// --- End File Reading ---
-
-	// --- Parsing Responsibility (call internal package) ---
-	log.Println("Parsing receipt data...")
-	// 3. Pass the data to the dedicated parser function
-	parsedReceipt, err := receipt.ParseReceipt(jsonData)
-	if err != nil {
-		log.Fatalf("FATAL: Failed to parse receipt data from %s: %v", filePath, err)
-	}
-
-	itemsToProcess := make([]llm.ItemInfo, len(parsedReceipt.Items))
-
-	for i := range parsedReceipt.Items {
-		itemsToProcess[i] = &parsedReceipt.Items[i]
-	}
-	// --- End Parsing ---
-
-	log.Printf("Successfully parsed receipt from %s with %d items.\n",
-		parsedReceipt.Timestamp, len(parsedReceipt.Items)) // Adjust field names based on your struct
-
-	// ... Next steps: Process parsedReceipt ...
-
-	// --- 3. Initialize AppSheet Client ---
-	log.Println("Initializing AppSheet client...")
-	appsheetClient, err := appsheet.NewClient(config.AppSheetBaseUrl, config.AppSheetAppId, config.AppSheetApiKey)
-	if err != nil {
-		log.Fatalf("FATAL: Failed to create AppSheet client: %v", err)
-	}
-	log.Println("AppSheet client initialized.")
-
-	// --- 4. Create Context for API Calls ---
-	// Use a background context for now, or add a timeout if needed
-	// Example: 2 minute timeout for fetching *all* initial AppSheet data
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel() // Important: release context resources when main exits
-
-	log.Println("Building product catalog")
-	productCatalog, err := catalog.BuildProductCatalog(ctx, appsheetClient)
-	if err != nil {
-		log.Println("Error happend when building the catalog")
-	}
-	log.Printf("Catalog built with %d cost groups\n", len(productCatalog))
-
-	// --- 5. Prompt genai to get the categorized items
-	ctx = context.Background()
-	geminiClient, err := llm.NewClient(ctx, config.GeminiApiKey)
-	if err != nil {
-		log.Fatalf("FATAL: Failed to create Gemini client: %v", err)
-	}
-	log.Println("Assigning categories to the items...")
-	categoryMapping, err := llm.AssignCategoryData(geminiClient, itemsToProcess, &productCatalog)
-	if err != nil {
-		log.Fatalf("FATAL: Failure occured during llm interaction: %v", err)
-	}
-
-	enrichedReceipt := categorizer.CategorizeReceipt(*parsedReceipt, categoryMapping)
-
-	expensesToAdd := make([]appsheet.ExpenseStage, 0, len(enrichedReceipt.Items))
-	for _, item := range enrichedReceipt.Items {
-		expensesToAdd = append(expensesToAdd, appsheet.ExpenseStage{
-			ReceiptId:    enrichedReceipt.Timestamp + " - " + strconv.Itoa(enrichedReceipt.ParsedTotal) + " HUF",
-			ExpenseDate:  enrichedReceipt.Timestamp,
-			CostGroup:    item.CostGroup,
-			MainCategory: item.MainCategory,
-			SubCategory:  item.Subcategory,
-			Name:         item.ProductName,
-			Amount:       item.Price,
-			OriginalName: item.OriginalName,
-			Approved:     false,
-		})
-	}
-
-	log.Println("Adding expenses to appsheet table...")
-	err = appsheet.WriteRecords[appsheet.ExpenseStage](appsheetClient, ctx, appsheet.TableExpenseStage, expensesToAdd)
-	if err != nil {
-		log.Fatalf("FATAL: Failure occured during appsheet write: %v", err)
-	}
-
-	log.Printf("Successfully added %d items to appsheet.\n", len(expensesToAdd))
-
-	// for _, cand := range resp.Candidates {
-	// 	if cand.Content != nil {
-	// 		for _, part := range cand.Content.Parts {
-	// 			fmt.Println(part)
-	// 		}
-	// 	}
-	// }
-	// fmt.Println("---")
-
-	// renderedTemplate, err := llm.RenderTemplate()
-	// if err != nil {
-	// 	log.Fatalf("FATAL: Failed to render template: %v", err)
-	// }
-
-	// log.Printf("Rendered template:\n\n%s\n", renderedTemplate)
 
 }
 
-func loadConfig() (Config, error) {
-	allEnvVarsFound := true
-	var c Config
-
-	geminiApiKey := os.Getenv("GEMINI_API_KEY")
-	if geminiApiKey == "" {
-		log.Fatal("FATAL: GEMINI_API_KEY environment variable not set.")
-		allEnvVarsFound = false
-	}
-
-	appSheetApiKey := os.Getenv("APPSHEET_API_KEY")
-	if appSheetApiKey == "" {
-		fmt.Println("FATAL: APPSHEET_API_KEY environment variable not set.")
-		allEnvVarsFound = false
-	}
-
-	appSheetAppId := os.Getenv("APPSHEET_APP_ID")
-	if appSheetAppId == "" {
-		fmt.Println("FATAL: APPSHEET_APP_ID environment variable not set.")
-		allEnvVarsFound = false
-	}
-
-	appSheetBaseUrl := os.Getenv("APPSHEET_BASE_URL")
-	if appSheetBaseUrl == "" {
-		fmt.Println("FATAL: APPSHEET_BASE_URL environment variable not set.")
-		allEnvVarsFound = false
-	}
-
-	if !allEnvVarsFound {
-		return c, errors.New("missing config from environment")
-	}
-
-	c.AppSheetApiKey = appSheetApiKey
-	c.AppSheetAppId = appSheetAppId
-	c.AppSheetBaseUrl = appSheetBaseUrl
-	c.GeminiApiKey = geminiApiKey
-
-	return c, nil
+func printUsage() {
+	fmt.Println("Receip processor usage:")
+	fmt.Println("Usage: categorizer <command> [flags]")
+	fmt.Println("")
+	fmt.Println("Commands:")
+	// --file <path_to_file>
+	fmt.Println("\tprocess\tProcess an input json file and save the result to AppSheet")
+	fmt.Println("\thelp\tShow this help message")
 }
+
+// func handleProcessCommand(args []string) {
+// 	processCmd := flag.NewFlagSet("process", flag.ExitOnError)
+
+// 	sourceType := processCmd.String("source", "file", "Type of the source, possible values: file")
+
+// 	processCmd.Parse(args)
+
+// 	switch *sourceType {
+// 	case "file":
+// 		fmt.Println("Load file input reader")
+
+// 		if processCmd.NArg() != 1 {
+// 			fmt.Printf("process command accepts exectly one file path, you passed %d\n", processCmd.NArg())
+// 			os.Exit(1)
+// 		}
+// 		fmt.Printf("file path provided: %s\n", processCmd.Args()[0])
+// 	// case "another":
+// 	//  handleAnotherCommand(args)
+
+// 	default:
+// 		fmt.Fprintf(os.Stderr, "Error: Unknown source type '%s'\n\n", *sourceType)
+// 		printUsage()
+// 		os.Exit(1)
+// 	}
+
+// }

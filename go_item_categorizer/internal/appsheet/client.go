@@ -23,37 +23,61 @@ type Client struct {
 	apiKey     string
 }
 
-func (c *Client) SendRequest(ctx context.Context, table AppSheetTable, method string, body io.Reader) (*http.Response, error) {
+// Handles sending a request and processing the response from the Appsheet API
+// 'rows' represent a slice of structs that can be marshalled to the targeted table schema for write requests
+// 'decodeTarget' represents a slice structs of the expected type, mapping to the table schema for read requests
+func (c *Client) doRequest(ctx context.Context, table appSheetTable, action appSheetAction, rows any, decodeTarget any) error {
 
+	// --- 1. Build the url for the request
 	endpointUrl := c.apiBaseUrl.JoinPath(string(table)).JoinPath("Action")
+	// --- 2. Build the request body
+	body, err := c.buildRequestBody(action, rows)
+	if err != nil {
+		return fmt.Errorf("failed to build apsheet request body: %w", err)
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpointUrl.String(), body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create http request object: %w", err)
 	}
-	// --- 1. Set Common Headers Expected by the AppSheet API---
+	// --- 3. Set Headers Expected by the AppSheet API
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("ApplicationAccessKey", c.apiKey)
 
-	// --- 2. Execute Request ---
+	// --- 4. Execute Request
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("http client failed to execute request: %w", err)
 	}
-	return resp, nil
+	defer resp.Body.Close()
+
+	// --- 5. Handle unsucessful request response
+	if resp.StatusCode != http.StatusOK {
+		// ignore error, main information in the status code
+		respBody, _ := io.ReadAll(resp.Body)
+		
+		// Attempt to read error body for more info
+		return fmt.Errorf("appsheet API returned non-OK status %d from AppSheet API for table '%s': %s", resp.StatusCode, string(table), string(respBody))
+	}
+
+	// --- 6. Decode response to the target
+	if decodeTarget != nil {
+		if err := json.NewDecoder(resp.Body).Decode(decodeTarget); err != nil {
+			return fmt.Errorf("failed to decode successful appsheet response body: %w", err)
+		}
+	}
+	return nil
 }
 
-
-func ReadRecords[TargetType any](c AppSheetClient, ctx context.Context, table AppSheetTable) ([]TargetType, error) {
-
-	// --- 1. Construct Request Body (Consistent "Find" Action) ---
-	requestBody := AppSheetActionRequest[TargetType]{
-		Action: ActionFind,
+func (c *Client) buildRequestBody(action appSheetAction, data any) (*bytes.Buffer, error) {
+	requestBody := appSheetActionRequest{
+		Action: action,
 		Properties: map[string]interface{}{
 			// Add default properties or allow passing them via options if needed
 			"Locale": "hu-HU",
 		},
+		Rows: data,
 	}
 
 	requestBodyBytes, err := json.Marshal(requestBody)
@@ -61,63 +85,34 @@ func ReadRecords[TargetType any](c AppSheetClient, ctx context.Context, table Ap
 		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
 
-	// --- 2. Execute Request ---
-	resp, err := c.SendRequest(ctx, table, http.MethodPost, bytes.NewBuffer(requestBodyBytes))
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute request to %s: %w", table, err)
-	}
-	defer resp.Body.Close()
-
-	// TODO: Check if api returns in-body errors
-	// TODO: Is status checking unifor accross different types os api calls? if yes it should go to the do request function
-	// --- 3. Handle Response Status Code ---
-	if resp.StatusCode != http.StatusOK {
-		// Attempt to read error body for more info
-		bodyBytes, _ := io.ReadAll(resp.Body) // Use io.ReadAll
-		return nil, fmt.Errorf("unexpected status code %d from AppSheet API for table '%s': %s", resp.StatusCode, string(table), string(bodyBytes))
-	}
-
-	// --- 4. Decode Successful Response using Generic Type ---
-	// Use json.NewDecoder for efficiency
-	parsedResponse := make([]TargetType, 0, 100)
-	decoder := json.NewDecoder(resp.Body)
-	if err := decoder.Decode(&parsedResponse); err != nil {
-		return nil, fmt.Errorf("failed to decode response body for table read: %w", err)
-	}
-
-	return parsedResponse, nil
+	return bytes.NewBuffer(requestBodyBytes), nil
 }
 
-func WriteRecords[TargetType any](c AppSheetClient, ctx context.Context, table AppSheetTable, records []TargetType) error {
-	// --- 1. Construct the request body ---
+func (c *Client) ReadExpenses(ctx context.Context) ([]Expense, error) {
+	var expenses []Expense
 
-	requestBody := AppSheetActionRequest[TargetType]{
-		Action: ActionAdd,
-		Properties: map[string]interface{}{
-			// Add default properties or allow passing them via options if needed
-			"Locale": "hu-HU",
-		},
-		Rows: records,
-	}
-
-	requestBodyBytes, err := json.Marshal(requestBody)
+	err := c.doRequest(ctx, TableExpenses, actionFind, nil, &expenses)
 	if err != nil {
-		return fmt.Errorf("failed to marshal request body: %w", err)
+		return nil, fmt.Errorf("could not read expenses from appsheet: %w", err)
 	}
 
-	// --- 2. Execute Request ---
-	resp, err := c.SendRequest(ctx, table, http.MethodPost, bytes.NewBuffer(requestBodyBytes))
+	return expenses, nil
+}
+
+func (c *Client) ReadCategories(ctx context.Context) ([]Category, error) {
+	var categories []Category
+	err := c.doRequest(ctx, TableCategories, actionFind, nil, &categories)
 	if err != nil {
-		return fmt.Errorf("failed to execute request to %s: %w", table, err)
+		return nil, fmt.Errorf("could not read categories from appsheet: %w", err)
 	}
-	defer resp.Body.Close()
 
-	// TODO: Check if api returns in-body errors
-	// --- 6. Handle Response Status Code ---
-	if resp.StatusCode != http.StatusOK {
-		// Attempt to read error body for more info
-		bodyBytes, _ := io.ReadAll(resp.Body) // Use io.ReadAll
-		return fmt.Errorf("unexpected status code %d from AppSheet API for table '%s': %s", resp.StatusCode, string(table), string(bodyBytes))
+	return categories, nil
+}
+
+func (c *Client) WriteExpenseStage(ctx context.Context, rows []ExpenseStage) error {
+	err := c.doRequest(ctx, TableExpenseStage, actionAdd, rows, nil)
+	if err != nil {
+		return fmt.Errorf("could not write expenses to the stage in appsheet: %w", err)
 	}
 
 	return nil

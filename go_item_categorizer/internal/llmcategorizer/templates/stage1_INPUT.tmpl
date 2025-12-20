@@ -6,5 +6,5 @@ Available Cost Groups:
 
 Receipt Items to Categorize:
 {{- range $index, $item := .Items }}
-{{ add $index 1 }}. "{{ $item.Name }}"
+{{ add $index 1 }}. "{{ $item.ItemName }}"
 {{- end }}

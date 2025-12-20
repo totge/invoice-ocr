@@ -2,48 +2,49 @@ package appsheet
 
 import (
 	"context"
-	"io"
-	"net/http"
 )
 
-// AppSheetAction represents the valid actions for the AppSheet API.
-type AppSheetAction string
-type AppSheetTable string
+// appSheetAction represents the valid actions for the AppSheet API.
+type appSheetAction string
+type appSheetTable string
 
 type AppSheetClient interface {
-	SendRequest(context.Context, AppSheetTable, string, io.Reader) (*http.Response, error)
+	ReadExpenses(context.Context) ([]Expense, error)
+	ReadCategories(context.Context) ([]Category, error)
+	WriteExpenseStage(context.Context, []ExpenseStage) error
 }
 
 // Constants defining the supported AppSheet actions.
 const (
-	// ActionFind instructs the API to find records.
-	ActionFind AppSheetAction = "Find"
-	// ActionAdd instructs the API to add records.
-	ActionAdd AppSheetAction = "Add"
+	// actionFind instructs the API to find records.
+	actionFind appSheetAction = "Find"
+	// actionAdd instructs the API to add records.
+	actionAdd appSheetAction = "Add"
 
-	TableCategories   AppSheetTable = "Kategóriák"
-	TableExpenses     AppSheetTable = "Kiadások"
-	TableExpenseStage AppSheetTable = "expense_stage"
+	//TODO: do not export these - once the old catalog packages is removed
+	TableCategories   appSheetTable = "Kategóriák"
+	TableExpenses     appSheetTable = "Kiadások"
+	TableExpenseStage appSheetTable = "expense_stage"
 )
 
-// AppSheetActionRequest defines the structure for the body of an AppSheet Action API call.
-type AppSheetActionRequest[T any] struct {
-	Action     AppSheetAction         `json:"Action"`
+// appSheetActionRequest defines the structure for the body of an AppSheet Action API call.
+type appSheetActionRequest struct {
+	Action     appSheetAction         `json:"Action"`
 	Properties map[string]interface{} `json:"Properties,omitempty"`
-	Rows       []T                    `json:"Rows,omitempty"` // Used for Add/Edit/Delete, often empty/nil for Find
+	Rows       any                    `json:"Rows,omitempty"` // Used for Add/Edit/Delete, often empty/nil for Find
 }
 
 type Category struct {
-	RowNumber    string `json:"_RowNumber"`      // Matches "_RowNumber" key
-	CategoryId   string `json:"Kategória ID"`    // Matches "Kategória ID" key
-	CostGroup    string `json:"Költség csoport"` // Matches "Költség csoport" key
-	MainCategory string `json:"Kategória"`       // Matches "Kategória" key
-	SubCategory  string `json:"Alkategória"`     // Matches "Alkategória" key
+	RowNumber    string `json:"_RowNumber,omitempty"` // Matches "_RowNumber" key
+	CategoryId   string `json:"Kategória ID"`         // Matches "Kategória ID" key
+	CostGroup    string `json:"Költség csoport"`      // Matches "Költség csoport" key
+	MainCategory string `json:"Kategória"`            // Matches "Kategória" key
+	SubCategory  string `json:"Alkategória"`          // Matches "Alkategória" key
 }
 
 type Expense struct {
-	RowNumber     string `json:"_RowNumber"`
-	Id            string `json:"ID"`
+	RowNumber     string `json:"_RowNumber,omitempty"`
+	Id            string `json:"ID,omitempty"`
 	EntryDate     string `json:"Rögzítés dátum"`
 	SameDayEntry  string `json:"Mai rögzítés"`
 	ExpenseDate   string `json:"Kiadás dátum"`
@@ -59,11 +60,11 @@ type Expense struct {
 }
 
 type ExpenseStage struct {
-	RowNumber    string `json:"_RowNumber"`
-	Id           string `json:"ID"`
+	RowNumber    string `json:"_RowNumber,omitempty"`
+	Id           string `json:"ID,omitempty"`
 	ReceiptId    string `json:"Vásárlás ID"`
 	ExpenseDate  string `json:"Vásárlás dátum"`
-	CategoryId   string `json:"Kategória ID"`
+	CategoryId   string `json:"Kategória ID,omitempty"`
 	CostGroup    string `json:"Költség csoport"`
 	MainCategory string `json:"Kategória"`
 	SubCategory  string `json:"Alkategória"`
