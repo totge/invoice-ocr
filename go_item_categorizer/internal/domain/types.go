@@ -20,16 +20,6 @@ type ProductClassification struct {
 	CategoryID   string `json:"category_id"`
 }
 
-// TODO: it is probably rendundant and ProductClassification should be used instead
-type CategoryHierarchy struct {
-	CostGroup    string
-	MainCategory string
-	Subcategory  string
-	ProductName  string
-}
-
-// TODO: it might be better to just embed item and product classification
-// defenetly a better option here, and the actual target writer can transform it to local types if needed for any reason
 type CategorizedItem struct {
 	Item
 	ProductClassification
