@@ -23,6 +23,7 @@ tasks:
     sources: # Re-run this task if any of these files change
       - "{{.CMD_PATH}}/**/*.go"
       - "internal/**/*.go"
+      - "internal/**/*.tmpl"
       - "go.mod"
       - "go.sum"
     generates: # Files this task is expected to create
