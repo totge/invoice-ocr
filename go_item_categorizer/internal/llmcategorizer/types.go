@@ -3,17 +3,17 @@ package llmcategorizer
 import "encoding/json"
 
 var stage1Schema = json.RawMessage(`{
-    "type": "array",
+    "type": 5,
     "items": {
-        "type": "object",
+        "type": 6,
         "properties": {
             "item_name": { 
-				"type": "string",
+				"type": 1,
 				"description": "original name of the item, exactly as it was provided in the input",
 				"nullable": false
 			},
             "cost_group": { 
-				"type": "string",
+				"type": 1,
 				"description": "original name of best corresponding cost group, exactly as it was provided in the input",
 				"nullable": false
 			}
@@ -28,37 +28,37 @@ type stage1ResponseItem struct {
 }
 
 var stage2Schema = json.RawMessage(`{
-    "type": "array",
+    "type": 5,
     "items": {
-        "type": "object",
+        "type": 6,
         "properties": {
             "item_name": { 
-				"type": "string",
+				"type": 1,
 				"description": "original name of the item, exactly as it was provided in the input",
 				"nullable": false
 			},
             "category_id": { 
-				"type": "string",
+				"type": 1,
 				"description": "the category_id of the best matching row, exactly as it was provided in the input",
 				"nullable": false
 			},
             "cost_group": { 
-				"type": "string",
+				"type": 1,
 				"description": "name of the cost group, exactly as it was provided in the input",
 				"nullable": false
 			},
             "main_category": { 
-				"type": "string",
+				"type": 1,
 				"description": "main category of the best fitting product from the product list",
 				"nullable": false
 			},
             "subcategory": { 
-				"type": "string",
+				"type": 1,
 				"description": "subcategory of the best fitting product from the product list",
 				"nullable": false
 			},
             "product_name": { 
-				"type": "string",
+				"type": 1,
 				"description": "best fitting general product name, selected from the provided product list",
 				"nullable": false
 			}
