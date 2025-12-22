@@ -56,9 +56,9 @@ func (c *Client) doRequest(ctx context.Context, table appSheetTable, action appS
 	if resp.StatusCode != http.StatusOK {
 		// ignore error, main information in the status code
 		respBody, _ := io.ReadAll(resp.Body)
-		
+
 		// Attempt to read error body for more info
-		return fmt.Errorf("appsheet API returned non-OK status %d from AppSheet API for table '%s': %s", resp.StatusCode, string(table), string(respBody))
+		return fmt.Errorf("appsheet API returned non-OK status code %d from AppSheet API for table '%s': %s", resp.StatusCode, string(table), string(respBody))
 	}
 
 	// --- 6. Decode response to the target
