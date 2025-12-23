@@ -15,37 +15,39 @@ type Client struct {
 
 var _ llm.Client = (*Client)(nil)
 
+//TODO: is response content validation needed? It seems a bit manual validation step i don't know if its reliable enough
+//TODO: Think about testability here, feels like this method does a lot
 func (c *Client) GenerateJSON(ctx context.Context, model string, prompt llm.Prompt) (string, error) {
-	// modelConfig := genai.GetModelConfig
-	// geminiModel, err := c.genaiClient.Models.Get(ctx, model)
-	// if err != nil {
-	// 	return "", fmt.Errorf("failed to unmarshal app's internal json schema into genai.Schema: %w", err)
-	// }
-	// geminiModel.ResponseMIMEType = "application/json" // Enforce JSON output
 
-	// --- TRANSLATION LOGIC ---
-	// geminiModel.SystemInstruction = &genai.Content{Parts: []genai.Part{genai.Text(prompt.SystemInstruction)}}
+	config := &genai.GenerateContentConfig{
+		ResponseMIMEType: "application/json",
+	}
 
-	// TODO: maybe separate the translation to a separate methode so that it is easily testable
+	// Setting system prompt for Gemini model
+	if prompt.SystemInstruction != "" {
+		config.SystemInstruction = &genai.Content{
+			Parts: []*genai.Part{{Text: prompt.SystemInstruction}},
+		}
+	}
 
-	var genaiSchema genai.Schema
+	// Setting output format
+	if prompt.OutputSchema != nil {
+		var genaiSchema genai.Schema
 
-	err := json.Unmarshal(prompt.OutputSchema, &genaiSchema)
+		if err := json.Unmarshal(prompt.OutputSchema, &genaiSchema); err != nil {
+			return "", fmt.Errorf("failed to unmarshal app's internal json schema into genai.Schema: %w", err)
+		}
+		config.ResponseSchema = &genaiSchema
+	}
+
+	// Convert internal Prompt type into genai.Content format.
+	genaiPrompt, err := c.translatePrompt(prompt)
 	if err != nil {
-		// This indicates a developer error (the JSON schema string is malformed).
-		return "", fmt.Errorf("failed to unmarshal app's internal json schema into genai.Schema: %w", err)
+		return "", fmt.Errorf("failed to convert prompt to genai types: %w", err)
 	}
 
-	// Convert our message history into genai.Content format.
-	// The genai library wants a flat list of Parts for its GenerateContent call.
-	// We will build this flat list from our structured messages.
-	genaiPrompt := genai.Text(prompt.Text)
-	contentConfig := genai.GenerateContentConfig{
-		SystemInstruction: genai.Text(prompt.SystemInstruction)[0],
-		ResponseMIMEType:  "application/json",
-		ResponseSchema:    &genaiSchema,
-	}
-	resp, err := c.genaiClient.Models.GenerateContent(ctx, model, genaiPrompt, &contentConfig)
+	// Generate content by the LLM
+	resp, err := c.genaiClient.Models.GenerateContent(ctx, model, genaiPrompt, config)
 	if err != nil {
 		return "", fmt.Errorf("gemini generation failed: %w", err)
 	}
@@ -59,10 +61,23 @@ func (c *Client) GenerateJSON(ctx context.Context, model string, prompt llm.Prom
 
 }
 
-// func (c *Client) translateOutputSchema(outputSchema json.RawMessage) (*genai.Schema, error) {
-// 	output
+func (c *Client) translatePrompt(prompt llm.Prompt) ([]*genai.Content, error) {
+	parts := make([]*genai.Part, 0, len(prompt.Content))
 
-// }
+	for _, c := range prompt.Content {
+		switch c.ContentType {
+		case llm.ContentTypeText:
+			parts = append(parts, &genai.Part{Text: string(c.Data)})
+		case llm.ContentTypeImage:
+			parts = append(parts, &genai.Part{InlineData: &genai.Blob{Data: c.Data, MIMEType: c.Format}})
+		default:
+			return nil, fmt.Errorf("unable to handle prompt type %s", c.ContentType)
+		}
+	}
+
+	return []*genai.Content{{Parts: parts}}, nil
+
+}
 
 func New(ctx context.Context, apiKey string) (*Client, error) {
 	var client Client
