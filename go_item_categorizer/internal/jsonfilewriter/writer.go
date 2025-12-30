@@ -17,6 +17,7 @@ type Writer struct {
 }
 
 var _ app.ResultWriter = (*Writer)(nil)
+var _ app.ReceiptWriter = (*Writer)(nil)
 
 // New validates the path and returns a writer ready to be used.
 func New(filePath string) (*Writer, error) {
@@ -56,6 +57,10 @@ func New(filePath string) (*Writer, error) {
 }
 
 func (w *Writer) WriteResult(ctx context.Context, receipt *domain.CategorizedReceipt) error {
+	return w.writeJSON(ctx, receipt)
+}
+
+func (w *Writer) WriteReceipt(ctx context.Context, receipt *domain.Receipt) error {
 	return w.writeJSON(ctx, receipt)
 }
 
