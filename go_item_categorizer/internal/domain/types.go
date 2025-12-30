@@ -1,15 +1,20 @@
 package domain
 
+type ImageSource struct {
+	Format string
+	Data   []byte
+}
+
 type Item struct {
 	ItemName string `json:"name"`
-	Price int `json:"price"`
-	Discount int `json:"discount"`
+	Price    int    `json:"price"`
+	Discount int    `json:"discount"`
 }
 
 type Receipt struct {
-	Timestamp string `json:"datetime"`
-	Items []Item `json:"items"`
-	ParsedTotal int `json:"parsed_total"`
+	Timestamp   string `json:"datetime"`
+	Items       []Item `json:"items"`
+	ParsedTotal int    `json:"parsed_total"`
 }
 
 type ProductClassification struct {
