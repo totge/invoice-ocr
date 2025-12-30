@@ -55,29 +55,31 @@ func New(filePath string) (*Writer, error) {
 	return &Writer{filePath: filePath}, nil
 }
 
-// WriteResult now uses the pre-validated path.
 func (w *Writer) WriteResult(ctx context.Context, receipt *domain.CategorizedReceipt) error {
+	return w.writeJSON(ctx, receipt)
+}
+
+// writeJSON is the shared, private logic for writing ANY data structure to a JSON file.
+func (w *Writer) writeJSON(ctx context.Context, data any) error {
 	// 1. Respect context cancellation.
-	// Before performing any work, check if the context has been cancelled.
 	select {
 	case <-ctx.Done():
-		return ctx.Err() // Return the context's error (e.g., context.Canceled)
+		return ctx.Err()
 	default:
-		// Context is still valid, proceed.
 	}
 
-	// File operations are now done here. We are confident this will
-	// likely succeed because of the checks in New().
+	// 2. File Creation
 	file, err := os.Create(w.filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file %q: %w", w.filePath, err)
 	}
 	defer file.Close()
 
+	// 3. Encoding
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "    ")
 
-	if err := encoder.Encode(receipt); err != nil {
+	if err := encoder.Encode(data); err != nil {
 		return fmt.Errorf("failed to encode and write JSON to file: %w", err)
 	}
 
