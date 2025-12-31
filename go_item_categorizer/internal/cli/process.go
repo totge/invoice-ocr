@@ -133,7 +133,7 @@ func RunProcessCommand(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize Gemini client: %w", err)
 	}
-	categorizer := llmcategorizer.New(llmClient, "gemini-2.0-flash")
+	categorizer := llmcategorizer.New(llmClient, options.GeminiModel)
 
 	// initialize result writer
 	var writer app.ResultWriter
