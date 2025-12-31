@@ -1,0 +1,23 @@
+Analyze the provided receipt image and extract the following information into the specified JSON structure:
+
+1. timestamp (string): The date and time of the purchase in ISO 8601 format (YYYY-MM-DDTHH:MM:SS). It is usually located at the bottom of the receipt, with the date part under `Nyugtaszám` on the left side and the time part on the right side of the same line. If the time is not visible, use 00:00:00.
+
+2. parsed_total (integer): The total amount paid. It is usually located under the item listing, separated by a dashed line, with `fizetendő` text on the left side and the total amount on the right side in HUF. IMPORTANT: Underneath this total there might be a total discount summary field; this has already been calculated into the total amount to be paid, so DO NOT subtract that from the total.
+
+3. items (array): A list of all purchased items found on the receipt. Product lines usually start with the product name on the left, and on the right side there is a price field (integer without currency code) followed by a VAT category code (e.g., `A00`, `B00`, `C00`, `E00`).
+
+IMPORTANT ITEM RULES:
+- **Ignore Calculation Lines:** Some item lines are preceded by calculation lines. These lines START WITH AN INDENTATION and show the amount purchased (e.g., `db` or `kg`) and the unit price (`Ft / db` or `Ft / kg`). Please IGNORE these lines and DO NOT INCLUDE them in the output.
+- **Handle Discount Lines:** Some item lines are followed by a discount line containing text like `LIDL PLUS KEDVEZMÉNY`, `KEDVEZMÉNY X%`, `<PRODUCT> AKCIO` or similar. The right side shows the discount amount in HUF (as a negative number). These discount lines always belong to the *preceding* item in the listing. Please include this discount amount in the corresponding item's field.
+- **Handle `Visszav. díj KF` named items:** For many bottled beverages a recycling fee is also added on a separate line following the item on the receipt. This recycleng fee is usually 50 HUF per bottle and has a name `Visszav. díj KF`. Please DO NOT add this as an item to the output, ONLY add the fee to the preceding item's full price. 
+
+For each item, extract:
+   - name (string): The description or name of the product.
+   - full_price (integer): The full price of the item.
+   - discount (integer): The amount of discount applied to this item. If no discount is listed, use 0; otherwise use the negative integer displayed on the receipt.
+
+INPUT CONTEXT:
+The user has provided an image file of a shopping receipt.
+
+OUTPUT FORMAT:
+Generate a JSON object matching the schema provided in the tool definition.

@@ -3,8 +3,8 @@ package jsonfilereader
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
-	"log"
 	"os"
 
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
@@ -18,16 +18,15 @@ type Reader struct {
 var _ app.ReceiptReader = (*Reader)(nil)
 
 func (r *Reader) ReadReceipt(ctx context.Context) (*domain.Receipt, error) {
-	jsonData, err := os.Open(r.filePath)
-	// TODO: add context to the error
+	file, err := os.Open(r.filePath)
 	if err != nil {
-		log.Fatalf("FATAL: Failed to open file %s: %v", r.filePath, err)
-		return nil, err
+		return nil, fmt.Errorf("failed to open json file %q: %w", r.filePath, err)
 	}
+	defer file.Close()
 
-	data, err := io.ReadAll(jsonData)
+	data, err := io.ReadAll(file)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read json data: %w", err)
 	}
 
 	var receipt domain.Receipt

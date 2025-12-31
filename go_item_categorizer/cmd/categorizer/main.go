@@ -23,8 +23,8 @@ func main() {
 	switch command {
 	case "process":
 		err = cli.RunProcessCommand(args)
-	// case "another":
-	//  handleAnotherCommand(args)
+	case "extract":
+		err = cli.RunExtractCommand(args)
 	case "help", "--help", "-h":
 		printUsage()
 	default:
@@ -46,7 +46,9 @@ func printUsage() {
 	fmt.Println("")
 	fmt.Println("Commands:")
 	// --file <path_to_file>
-	fmt.Println("\tprocess\tProcess an input json file and save the result to AppSheet")
+	fmt.Println("\tprocess\tProcess an input json file and save the result to a file or AppSheet")
+	fmt.Println("\textract\tExtract data from receipt image in astructured format and save the result to a file")
+
 	fmt.Println("\thelp\tShow this help message")
 }
 
