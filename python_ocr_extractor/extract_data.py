@@ -254,7 +254,7 @@ class Invoice:
             if "ertekesitesi bizonylat" in line.text.lower():
                 upper_boundary = line.line_bottom
 
-            if "fizetend" in line.text.lower():
+            if "fizetend" in line.text.lower() or "osszesen" in line.text.lower():
                 lower_boundary = line.line_top
 
         return upper_boundary, lower_boundary
@@ -315,7 +315,7 @@ class Invoice:
         price = None
 
         for line in self._lines:
-            if "fizetend" in line.text.lower():
+            if "fizetend" in line.text.lower() or "osszesen" in line.text.lower():
                 _, price = line.extract_item_data()
         
         return price
@@ -385,8 +385,9 @@ if __name__ == "__main__":
     invoice_paths = [
         "16000333862025032623918",  
         "16000335892025032535080",
-        "16000333892025031436070 (1)",
-        "16000335892025032735441"
+        "16000333892025031436070",
+        "16000335892025032735441",
+        "16000333220250508145"
     ]
 
 
@@ -421,13 +422,13 @@ if __name__ == "__main__":
         # data_raw:str = pytesseract.image_to_data(inv_path, lang="eng", output_type=pytesseract.Output.DICT ,config=custom_config)
 
 # latest work test
-        data_dict = process_invoice(f"test_invoices/{inv_name}.png")
+        data_dict = process_invoice(f"python_ocr_extractor/test_invoices/{inv_name}.png")
         # print(data_dict)
         invoice = Invoice(data_dict)
 
         print(invoice.to_json())
 
-        with open(f"test_invoices/output/{inv_name}.json", "w") as file:
+        with open(f"python_ocr_extractor/test_invoices/output/{inv_name}.json", "w") as file:
             file.write(invoice.to_json())
 
         # invoice._extract_date()
