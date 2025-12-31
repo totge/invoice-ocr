@@ -2,8 +2,9 @@ package imagereader
 
 import (
 	"context"
+	"fmt"
 	"io"
-	"log"
+	"net/http"
 	"os"
 
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
@@ -11,28 +12,33 @@ import (
 )
 
 type Reader struct {
-	filePath   string
-	fileFormat string
+	filePath string
 }
 
 var _ app.ReceiptImageReader = (*Reader)(nil)
 
 func (r *Reader) ReadReceiptImage(ctx context.Context) (*domain.ImageSource, error) {
-	jsonData, err := os.Open(r.filePath)
-	// TODO: add context to the error
+	file, err := os.Open(r.filePath)
 	if err != nil {
-		log.Fatalf("FATAL: Failed to open file %s: %v", r.filePath, err)
-		return nil, err
+		return nil, fmt.Errorf("failed to open image file %q: %w", r.filePath, err)
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read image data: %w", err)
 	}
 
-	data, err := io.ReadAll(jsonData)
-	if err != nil {
-		return nil, err
-	}
+	// detecting MIME type
+	mimeType := http.DetectContentType(data)
 
-	return &domain.ImageSource{Data: data}, nil
+	return &domain.ImageSource{
+		Data:   data,
+		Format: mimeType,
+	}, nil
 }
 
 func NewReader(filePath string) *Reader {
+
 	return &Reader{filePath: filePath}
 }
