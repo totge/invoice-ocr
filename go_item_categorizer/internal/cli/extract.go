@@ -101,7 +101,7 @@ func RunExtractCommand(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize Gemini client: %w", err)
 	}
-	extractor := ocrextractor.New(llmClient, "gemini-2.0-flash")
+	extractor := ocrextractor.New(llmClient, options.GeminiModel)
 
 	// initialize result writer
 	writer, err := jsonfilewriter.New(options.OutputPath)
