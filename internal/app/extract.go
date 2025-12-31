@@ -6,7 +6,7 @@ import (
 )
 
 func Extract(ctx context.Context, reader ReceiptImageReader, extractor Extractor, writer ReceiptWriter) error {
-	
+
 	image, err := reader.ReadReceiptImage(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to read receipt input: %w", err)

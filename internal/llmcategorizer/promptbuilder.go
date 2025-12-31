@@ -101,7 +101,7 @@ func (pb *promptBuilder) buildStage1Prompt(items []domain.Item, allCostGroups []
 	// Assemble and return the final Prompt struct
 	return llm.Prompt{
 		SystemInstruction: systemInstruction,
-		Content:         []*llm.PromptContent{{ContentType: llm.ContentTypeText, Data: []byte(sb.String())}},
+		Content:           []*llm.PromptContent{{ContentType: llm.ContentTypeText, Data: []byte(sb.String())}},
 		OutputSchema:      stage1Schema,
 	}, nil
 }
@@ -157,7 +157,7 @@ func (pb *promptBuilder) buildStage2Prompt(costGroup string, itemsInGroup []doma
 	// Assemble and return the final Prompt struct
 	return llm.Prompt{
 		SystemInstruction: systemInstruction,
-		Content:         []*llm.PromptContent{{ContentType: llm.ContentTypeText, Data: []byte(sb.String())}},
+		Content:           []*llm.PromptContent{{ContentType: llm.ContentTypeText, Data: []byte(sb.String())}},
 		OutputSchema:      stage2Schema,
 	}, nil
 }

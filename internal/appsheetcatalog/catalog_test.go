@@ -93,7 +93,6 @@ func TestBuildProductList(t *testing.T) {
 	}
 }
 
-
 func TestCatalog_ListProducts(t *testing.T) {
 	ctx := context.Background()
 

@@ -28,7 +28,7 @@ type ImageFormat string
 
 const (
 	ImageFormatJPEG = "image/jpeg"
-	ImageFormatPNG = "image/png"
+	ImageFormatPNG  = "image/png"
 )
 
 // Client is the agnostic interface that all LLM providers must implement.
