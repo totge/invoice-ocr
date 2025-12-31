@@ -15,8 +15,8 @@ type Client struct {
 
 var _ llm.Client = (*Client)(nil)
 
-//TODO: is response content validation needed? It seems a bit manual validation step i don't know if its reliable enough
-//TODO: Think about testability here, feels like this method does a lot
+// TODO: is response content validation needed? It seems a bit manual validation step i don't know if its reliable enough
+// TODO: Think about testability here, feels like this method does a lot
 func (c *Client) GenerateJSON(ctx context.Context, model string, prompt llm.Prompt) (string, error) {
 
 	config := &genai.GenerateContentConfig{
