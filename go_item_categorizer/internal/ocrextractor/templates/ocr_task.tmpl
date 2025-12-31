@@ -9,6 +9,7 @@ Analyze the provided receipt image and extract the following information into th
 IMPORTANT ITEM RULES:
 - **Ignore Calculation Lines:** Some item lines are preceded by calculation lines. These lines START WITH AN INDENTATION and show the amount purchased (e.g., `db` or `kg`) and the unit price (`Ft / db` or `Ft / kg`). Please IGNORE these lines and DO NOT INCLUDE them in the output.
 - **Handle Discount Lines:** Some item lines are followed by a discount line containing text like `LIDL PLUS KEDVEZMÉNY`, `KEDVEZMÉNY X%`, `<PRODUCT> AKCIO` or similar. The right side shows the discount amount in HUF (as a negative number). These discount lines always belong to the *preceding* item in the listing. Please include this discount amount in the corresponding item's field.
+- **Handle `Visszav. díj KF` named items:** For many bottled beverages a recycling fee is also added on a separate line following the item on the receipt. This recycleng fee is usually 50 HUF per bottle and has a name `Visszav. díj KF`. Please DO NOT add this as an item to the output, ONLY add the fee to the preceding item's full price. 
 
 For each item, extract:
    - name (string): The description or name of the product.
