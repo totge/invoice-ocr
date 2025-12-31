@@ -23,7 +23,7 @@ func NewConfig() *Config {
 
 	// 2. Initialize with Defaults
 	c := &Config{
-		GeminiModel: "gemini-2.0-flash",
+		GeminiModel:     "gemini-2.0-flash",
 		AppSheetBaseUrl: "https://www.appsheet.com",
 	}
 
@@ -49,10 +49,8 @@ func NewConfig() *Config {
 // RegisterFlags binds the config fields to CLI flags on the provided FlagSet.
 // This allows any command to "inherit" these standard config flags.
 func (c *Config) RegisterConfigFlags(fs *flag.FlagSet) {
-	// The magic is here: we pass 'c.GeminiApiKey' (which holds the Env value)
-	// as the default value for the flag.
 	fs.StringVar(&c.GeminiApiKey, "gemini-key", c.GeminiApiKey, "Gemini API Key")
-	fs.StringVar(&c.GeminiApiKey, "gemini-model", c.GeminiApiKey, "Gemini model name")
+	fs.StringVar(&c.GeminiModel, "gemini-model", c.GeminiModel, "Gemini model name")
 	fs.StringVar(&c.AppSheetApiKey, "appsheet-key", c.AppSheetApiKey, "AppSheet API Key")
 	fs.StringVar(&c.AppSheetAppId, "appsheet-id", c.AppSheetAppId, "AppSheet App ID")
 	fs.StringVar(&c.AppSheetBaseUrl, "appsheet-url", c.AppSheetBaseUrl, "AppSheet Base URL")
