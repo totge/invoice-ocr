@@ -20,16 +20,16 @@ type extractOptions struct {
 	*Config
 }
 
-func (p *extractOptions) RegisterFlags(fs *flag.FlagSet) {
+func (p *extractOptions) registerFlags(fs *flag.FlagSet) {
 	fs.StringVar(&p.InputPath, "input", p.InputPath, "Path to the input receipt image")
 	fs.StringVar(&p.OutputPath, "output", p.OutputPath, "Output file path")
-	p.RegisterConfigFlags(fs)
+	p.registerConfigFlags(fs)
 }
 
-func (p *extractOptions) Validate() error {
+func (p *extractOptions) validate() error {
 
 	// validate app config
-	err := p.Config.Validate()
+	err := p.Config.validate()
 	if err != nil {
 		// handle error
 	}
@@ -51,8 +51,8 @@ func (p *extractOptions) Validate() error {
 }
 
 // Sets the default arguments for the command
-func NewExtractDefaultOptions() extractOptions {
-	cfg := NewConfig()
+func newExtractDefaultOptions() extractOptions {
+	cfg := newConfig()
 	return extractOptions{
 		InputPath:  "",
 		OutputPath: "",
@@ -60,17 +60,17 @@ func NewExtractDefaultOptions() extractOptions {
 	}
 }
 
-func GetExtractCommandOptions(args []string) (extractOptions, error) {
-	options := NewExtractDefaultOptions()
+func getExtractCommandOptions(args []string) (extractOptions, error) {
+	options := newExtractDefaultOptions()
 	fs := flag.NewFlagSet("extract", flag.ExitOnError)
-	options.RegisterFlags(fs)
+	options.registerFlags(fs)
 	err := fs.Parse(args)
 
 	if err != nil {
 		return options, fmt.Errorf("failed parsing cli arguments for 'extract' command: %w", err)
 	}
 
-	err = options.Validate()
+	err = options.validate()
 	if err != nil {
 		return options, fmt.Errorf("invalid arguments for 'process' command: %w", err)
 	}
@@ -82,7 +82,7 @@ func GetExtractCommandOptions(args []string) (extractOptions, error) {
 // args: os.Args[2:] (arguments after 'process')
 func RunExtractCommand(args []string) error {
 	// 1. Initialize Config (Loads Defaults + Env)
-	options, err := GetExtractCommandOptions(args)
+	options, err := getExtractCommandOptions(args)
 	if err != nil {
 		return fmt.Errorf("failed running 'extract' command: %w", err)
 	}

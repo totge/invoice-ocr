@@ -24,17 +24,17 @@ type processOptions struct {
 	*Config
 }
 
-func (p *processOptions) RegisterFlags(fs *flag.FlagSet) {
+func (p *processOptions) registerFlags(fs *flag.FlagSet) {
 	fs.StringVar(&p.InputPath, "input", p.InputPath, "Path to the input receipt file (JSON)")
 	fs.StringVar(&p.OutputTarget, "target", p.OutputTarget, "Output target: 'file' or 'appsheet'")
 	fs.StringVar(&p.OutputPath, "output", p.OutputPath, "Output file path (only used if target is 'file')")
-	p.RegisterConfigFlags(fs)
+	p.registerConfigFlags(fs)
 }
 
-func (p *processOptions) Validate() error {
+func (p *processOptions) validate() error {
 
 	// validate app config
-	err := p.Config.Validate()
+	err := p.Config.validate()
 	if err != nil {
 		// handle error
 	}
@@ -74,8 +74,8 @@ func (p *processOptions) Validate() error {
 }
 
 // Sets the default arguments for the command
-func NewProcessDefaultOptions() processOptions {
-	cfg := NewConfig()
+func newProcessDefaultOptions() processOptions {
+	cfg := newConfig()
 	return processOptions{
 		InputPath:    "",
 		OutputTarget: "file",
@@ -84,17 +84,17 @@ func NewProcessDefaultOptions() processOptions {
 	}
 }
 
-func GetProcessCommandOptions(args []string) (processOptions, error) {
-	options := NewProcessDefaultOptions()
+func getProcessCommandOptions(args []string) (processOptions, error) {
+	options := newProcessDefaultOptions()
 	fs := flag.NewFlagSet("process", flag.ExitOnError)
-	options.RegisterFlags(fs)
+	options.registerFlags(fs)
 	err := fs.Parse(args)
 
 	if err != nil {
 		return options, fmt.Errorf("failed parsing cli arguments for 'process' command: %w", err)
 	}
 
-	err = options.Validate()
+	err = options.validate()
 	if err != nil {
 		return options, fmt.Errorf("invalid arguments for 'process' command: %w", err)
 	}
@@ -106,7 +106,7 @@ func GetProcessCommandOptions(args []string) (processOptions, error) {
 // args: os.Args[2:] (arguments after 'process')
 func RunProcessCommand(args []string) error {
 	// 1. Initialize Config (Loads Defaults + Env)
-	options, err := GetProcessCommandOptions(args)
+	options, err := getProcessCommandOptions(args)
 	if err != nil {
 		return fmt.Errorf("failed running 'process' command: %w", err)
 	}
