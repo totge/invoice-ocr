@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
@@ -30,6 +31,13 @@ func (c *Client) doRequest(ctx context.Context, table appSheetTable, action appS
 
 	// --- 1. Build the url for the request
 	endpointUrl := c.apiBaseUrl.JoinPath(string(table)).JoinPath("Action")
+
+	slog.Debug("Preparing AppSheet API request",
+		"table", table,
+		"action", action,
+		"url", endpointUrl.String(),
+	)
+
 	// --- 2. Build the request body
 	body, err := c.buildRequestBody(action, rows)
 	if err != nil {
@@ -52,6 +60,8 @@ func (c *Client) doRequest(ctx context.Context, table appSheetTable, action appS
 	}
 	defer resp.Body.Close()
 
+	slog.Debug("AppSheet API response received", "status", resp.StatusCode)
+
 	// --- 5. Handle unsucessful request response
 	if resp.StatusCode != http.StatusOK {
 		// ignore error, main information in the status code
@@ -66,6 +76,7 @@ func (c *Client) doRequest(ctx context.Context, table appSheetTable, action appS
 		if err := json.NewDecoder(resp.Body).Decode(decodeTarget); err != nil {
 			return fmt.Errorf("failed to decode successful appsheet response body: %w", err)
 		}
+		slog.Debug("AppSheet response decoded successfully")
 	}
 	return nil
 }
@@ -96,6 +107,8 @@ func (c *Client) ReadExpenses(ctx context.Context) ([]Expense, error) {
 		return nil, fmt.Errorf("could not read expenses from appsheet: %w", err)
 	}
 
+	slog.Debug("Expenses fetched", "count", len(expenses))
+
 	return expenses, nil
 }
 
@@ -106,10 +119,15 @@ func (c *Client) ReadCategories(ctx context.Context) ([]Category, error) {
 		return nil, fmt.Errorf("could not read categories from appsheet: %w", err)
 	}
 
+	slog.Debug("Categories fetched", "count", len(categories))
+
 	return categories, nil
 }
 
 func (c *Client) WriteExpenseStage(ctx context.Context, rows []ExpenseStage) error {
+
+	slog.Debug("Writing expenses to stage", "count", len(rows))
+
 	err := c.doRequest(ctx, TableExpenseStage, actionAdd, rows, nil)
 	if err != nil {
 		return fmt.Errorf("could not write expenses to the stage in appsheet: %w", err)
@@ -134,10 +152,11 @@ func NewClient(baseUrl string, appId string, apiKey string) (*Client, error) {
 
 	parsedBaseURL = parsedBaseURL.JoinPath("/api/v2/apps/", appId, "/tables/")
 
+	slog.Debug("Initializing AppSheet client", "app_id", appId, "base_url", parsedBaseURL.String())
+
 	// Create an http.Client with a timeout
 	httpClient := &http.Client{
 		Timeout: defaultTimeout,
-		// You can customize Transport later if needed (e.g., for retries)
 	}
 
 	client := &Client{
