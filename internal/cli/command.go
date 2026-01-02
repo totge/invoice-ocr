@@ -8,7 +8,7 @@ import (
 
 type command interface {
 	GetName() string
-	SetDefaults() 
+	SetDefaults()
 	RegisterFlags(*flag.FlagSet) // Binds command-specific flags
 	ValidateOptions() error      // Validates command-specific options (not global config)
 	EmbedConfig(*config)         // Method to inject the parsed global config
@@ -42,7 +42,7 @@ func parseCommandOptions(cmd command, args []string) error {
 	}
 
 	// 7. Validate Global Config
-	if err := cmd.GetConfig().ValidateConfig(); err != nil {
+	if err := cmd.GetConfig().validate(); err != nil {
 		return fmt.Errorf("invalid global configuration for command '%s': %w", cmd.GetName(), err)
 	}
 
