@@ -8,8 +8,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config struct to hold application configuration
-type Config struct {
+// config struct to hold application configuration
+type config struct {
 	GeminiApiKey    string
 	GeminiModel     string
 	AppSheetApiKey  string
@@ -17,12 +17,12 @@ type Config struct {
 	AppSheetBaseUrl string
 }
 
-func NewConfig() *Config {
+func newConfig() *config {
 	// 1. Load .env file
 	_ = godotenv.Load()
 
 	// 2. Initialize with Defaults
-	c := &Config{
+	c := &config{
 		GeminiModel:     "gemini-2.0-flash",
 		AppSheetBaseUrl: "https://www.appsheet.com",
 	}
@@ -48,7 +48,7 @@ func NewConfig() *Config {
 
 // RegisterFlags binds the config fields to CLI flags on the provided FlagSet.
 // This allows any command to "inherit" these standard config flags.
-func (c *Config) RegisterConfigFlags(fs *flag.FlagSet) {
+func (c *config) registerConfigFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.GeminiApiKey, "gemini-key", c.GeminiApiKey, "Gemini API Key")
 	fs.StringVar(&c.GeminiModel, "gemini-model", c.GeminiModel, "Gemini model name")
 	fs.StringVar(&c.AppSheetApiKey, "appsheet-key", c.AppSheetApiKey, "AppSheet API Key")
@@ -56,8 +56,8 @@ func (c *Config) RegisterConfigFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.AppSheetBaseUrl, "appsheet-url", c.AppSheetBaseUrl, "AppSheet Base URL")
 }
 
-// Validate checks if the final configuration (after Env and Flags) is valid.
-func (c *Config) Validate() error {
+// validate checks if the final configuration (after Env and Flags) is valid.
+func (c *config) validate() error {
 	var missing []string
 	if c.GeminiApiKey == "" {
 		missing = append(missing, "Gemini API Key")
@@ -73,4 +73,19 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("missing required configuration: %v. \nSet via environment variables (INVOICE_CATEGORIZER_...) or CLI flags", missing)
 	}
 	return nil
+}
+
+// --- Helper type for embedded config ---
+type baseConfig struct {
+	cfg *config // Pointer to the shared config instance
+}
+
+// EmbedConfig sets the internal config reference.
+func (b *baseConfig) EmbedConfig(c *config) {
+	b.cfg = c
+}
+
+// GetConfig returns the embedded config.
+func (b *baseConfig) GetConfig() *config {
+	return b.cfg
 }
