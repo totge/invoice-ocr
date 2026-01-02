@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -21,6 +22,8 @@ var _ app.ReceiptWriter = (*Writer)(nil)
 
 // New validates the path and returns a writer ready to be used.
 func New(filePath string) (*Writer, error) {
+
+	slog.Debug("Initializing JSON file writer", "target_path", filePath)
 	if filePath == "" {
 		return nil, fmt.Errorf("output file path cannot be empty")
 	}
@@ -52,7 +55,6 @@ func New(filePath string) (*Writer, error) {
 	tempFile.Close()
 	os.Remove(tempFile.Name())
 
-	// All checks passed!
 	return &Writer{filePath: filePath}, nil
 }
 
@@ -66,9 +68,13 @@ func (w *Writer) WriteReceipt(ctx context.Context, receipt *domain.Receipt) erro
 
 // writeJSON is the shared, private logic for writing ANY data structure to a JSON file.
 func (w *Writer) writeJSON(ctx context.Context, data any) error {
+
+	slog.Debug("Writing JSON output to file", "path", w.filePath)
+
 	// 1. Respect context cancellation.
 	select {
 	case <-ctx.Done():
+		slog.Debug("JSON write cancelled by context", "path", w.filePath)
 		return ctx.Err()
 	default:
 	}
@@ -87,6 +93,8 @@ func (w *Writer) writeJSON(ctx context.Context, data any) error {
 	if err := encoder.Encode(data); err != nil {
 		return fmt.Errorf("failed to encode and write JSON to file: %w", err)
 	}
+
+	slog.Debug("JSON file written successfully", "path", w.filePath)
 
 	return nil
 }
