@@ -86,7 +86,7 @@ func (c *Categorizer) executeStage2(ctx context.Context, items []domain.Item, st
 		}
 
 		slog.Debug("Processing Stage 2 Batch", "cost_group", costGroup, "item_count", len(itemsInGroup))
-		
+
 		// 2a. Build the prompt for this batch.
 		prompt, err := builder.buildStage2Prompt(costGroup, itemsInGroup, productCandidates)
 		if err != nil {

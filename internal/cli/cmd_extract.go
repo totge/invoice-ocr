@@ -74,7 +74,7 @@ func RunExtractCommand(args []string) error {
 		"output", options.OutputPath,
 		"model", options.GetConfig().GeminiModel,
 	)
-	
+
 	// 2. Setup Context (Cancellation)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()

@@ -37,7 +37,7 @@ func (r *Reader) ReadReceiptImage(ctx context.Context) (*domain.ImageSource, err
 	// detecting MIME type
 	mimeType := http.DetectContentType(data)
 	slog.Debug("Image format detected", "mime_type", mimeType)
-	
+
 	return &domain.ImageSource{
 		Data:   data,
 		Format: mimeType,
