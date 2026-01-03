@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -68,6 +69,12 @@ func RunExtractCommand(args []string) error {
 		return fmt.Errorf("failed running 'extract' command: %w", err)
 	}
 
+	slog.Debug("Extract command configuration",
+		"input", options.InputPath,
+		"output", options.OutputPath,
+		"model", options.GetConfig().GeminiModel,
+	)
+	
 	// 2. Setup Context (Cancellation)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
