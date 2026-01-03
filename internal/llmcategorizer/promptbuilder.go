@@ -4,7 +4,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 	"text/template"
 
@@ -50,11 +50,8 @@ func init() {
 
 	if err != nil {
 		// If templates fail to parse, the application cannot function correctly.
-		// Using log.Fatalf ensures the error is printed and the app exits.
-		log.Fatalf("FATAL: Failed to parse prompt templates: %v", err)
+		panic(fmt.Sprintf("FATAL: Failed to parse prompt templates: %v", err))
 	}
-
-	log.Println("Gemini prompt templates loaded and parsed successfully.")
 
 	builder = &promptBuilder{templates: parsedTemplates}
 
@@ -62,6 +59,12 @@ func init() {
 
 // buildStage1Prompt creates the complete, agnostic prompt for the cost group assignment task.
 func (pb *promptBuilder) buildStage1Prompt(items []domain.Item, allCostGroups []string) (llm.Prompt, error) {
+
+	slog.Debug("Building Stage 1 prompt",
+		"item_count", len(items),
+		"cost_group_count", len(allCostGroups),
+	)
+
 	// The data structure passed to the template for rendering.
 	templateData := struct {
 		Items      []domain.Item
@@ -108,6 +111,13 @@ func (pb *promptBuilder) buildStage1Prompt(items []domain.Item, allCostGroups []
 
 // buildStage2Prompt creates the prompt for the detailed product matching task.
 func (pb *promptBuilder) buildStage2Prompt(costGroup string, itemsInGroup []domain.Item, productCandidates []domain.ProductClassification) (llm.Prompt, error) {
+
+	slog.Debug("Building Stage 2 prompt",
+		"cost_group", costGroup,
+		"item_count", len(itemsInGroup),
+		"candidate_count", len(productCandidates),
+	)
+
 	taskTemplateData := struct {
 		CostGroup string
 	}{
