@@ -3,6 +3,7 @@ package appsheetwriter
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
@@ -21,6 +22,13 @@ type Writer struct {
 var _ app.ResultWriter = (*Writer)(nil)
 
 func (w *Writer) WriteResult(ctx context.Context, receipt *domain.CategorizedReceipt) error {
+
+	slog.Debug("Transforming receipt for AppSheet export",
+		"receipt_timestamp", receipt.Timestamp,
+		"total_amount", receipt.ParsedTotal,
+		"item_count", len(receipt.Items),
+	)
+
 	stagedExpenses := make([]appsheet.ExpenseStage, 0, len(receipt.Items))
 
 	for _, item := range receipt.Items {
@@ -42,6 +50,8 @@ func (w *Writer) WriteResult(ctx context.Context, receipt *domain.CategorizedRec
 	if err != nil {
 		return fmt.Errorf("appsheet client failed to write the results: %w", err)
 	}
+
+	slog.Debug("Receipt successfully exported to AppSheet")
 
 	return nil
 }
