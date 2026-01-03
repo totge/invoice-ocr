@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -87,6 +88,12 @@ func RunProcessCommand(args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed running 'extract' command: %w", err)
 	}
+
+	slog.Debug("Process command configuration",
+		"input", options.InputPath,
+		"target", options.OutputTarget,
+		"output", options.OutputPath,
+	)
 
 	// 2. Setup Context (Cancellation)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/llm"
 	"google.golang.org/genai"
@@ -18,6 +19,11 @@ var _ llm.Client = (*Client)(nil)
 // TODO: is response content validation needed? It seems a bit manual validation step i don't know if its reliable enough
 // TODO: Think about testability here, feels like this method does a lot
 func (c *Client) GenerateJSON(ctx context.Context, model string, prompt llm.Prompt) (string, error) {
+
+	slog.Debug("Generating content with Gemini",
+		"model", model,
+		"content_parts", len(prompt.Content),
+	)
 
 	config := &genai.GenerateContentConfig{
 		ResponseMIMEType: "application/json",
@@ -38,6 +44,8 @@ func (c *Client) GenerateJSON(ctx context.Context, model string, prompt llm.Prom
 			return "", fmt.Errorf("failed to unmarshal app's internal json schema into genai.Schema: %w", err)
 		}
 		config.ResponseSchema = &genaiSchema
+
+		slog.Debug("Applied JSON schema validation to Gemini request")
 	}
 
 	// Convert internal Prompt type into genai.Content format.
@@ -57,7 +65,12 @@ func (c *Client) GenerateJSON(ctx context.Context, model string, prompt llm.Prom
 		return "", fmt.Errorf("gemini returned no content")
 	}
 
-	return resp.Text(), nil
+	text := resp.Text()
+
+	slog.Debug("Gemini response received", "response_length", len(text))
+	slog.Debug("Token usage", "prompt_tokens", resp.UsageMetadata.PromptTokenCount)
+
+	return text, nil
 
 }
 
@@ -80,6 +93,9 @@ func (c *Client) translatePrompt(prompt llm.Prompt) ([]*genai.Content, error) {
 }
 
 func New(ctx context.Context, apiKey string) (*Client, error) {
+
+	slog.Debug("Initializing Gemini client")
+
 	var client Client
 
 	geminiClient, err := genai.NewClient(ctx, &genai.ClientConfig{

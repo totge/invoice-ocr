@@ -46,7 +46,10 @@ func parseCommandOptions(cmd command, args []string) error {
 		return fmt.Errorf("invalid global configuration for command '%s': %w", cmd.GetName(), err)
 	}
 
-	// 8. Validate Command-Specific Options
+	// 8. Setting up logger
+	setupLogger(cmd.GetConfig().LogLevel, cmd.GetConfig().Verbose)
+
+	// 9. Validate Command-Specific Options
 	if err := cmd.ValidateOptions(); err != nil {
 		return fmt.Errorf("invalid options for command '%s': %w", cmd.GetName(), err)
 	}

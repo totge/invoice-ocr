@@ -3,6 +3,7 @@ package appsheetcatalog
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sync"
 
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
@@ -49,6 +50,12 @@ func (c *Catalog) fetchExpenses(ctx context.Context) ([]appsheet.Expense, error)
 }
 
 func (c *Catalog) buildProductList(categoryMap map[string]appsheet.Category, expenses []appsheet.Expense) []domain.ProductClassification {
+
+	slog.Debug("Building product list from raw data",
+		"category_count", len(categoryMap),
+		"raw_expense_count", len(expenses),
+	)
+
 	// Define a local struct for the composite key
 	type expenseKey struct {
 		ProductName string
@@ -80,6 +87,9 @@ func (c *Catalog) buildProductList(categoryMap map[string]appsheet.Category, exp
 	return productList
 }
 func (c *Catalog) init(ctx context.Context) {
+
+	slog.Debug("Initializing product catalog (Cache Miss)")
+
 	categories, err := c.fetchCategories(ctx)
 	if err != nil {
 		c.initErr = err
@@ -93,6 +103,8 @@ func (c *Catalog) init(ctx context.Context) {
 	productList := c.buildProductList(categories, expenseList)
 
 	c.productList = productList
+
+	slog.Debug("Catalog initialization complete", "unique_product_count", len(c.productList))
 }
 
 func (c *Catalog) ListProducts(ctx context.Context) ([]domain.ProductClassification, error) {

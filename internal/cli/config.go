@@ -15,6 +15,8 @@ type config struct {
 	AppSheetApiKey  string
 	AppSheetAppId   string
 	AppSheetBaseUrl string
+	LogLevel        string
+	Verbose         bool
 }
 
 func newConfig() *config {
@@ -25,6 +27,7 @@ func newConfig() *config {
 	c := &config{
 		GeminiModel:     "gemini-2.0-flash",
 		AppSheetBaseUrl: "https://www.appsheet.com",
+		LogLevel:        "error",
 	}
 
 	// 3. Overwrite with Environment Variables
@@ -32,7 +35,7 @@ func newConfig() *config {
 		return os.Getenv("INVOICE_CATEGORIZER_" + key)
 	}
 
-	// getting the environment variables
+	// getting the environment variables or setting defaults
 	c.GeminiApiKey = get("GEMINI_API_KEY")
 	c.AppSheetApiKey = get("APPSHEET_API_KEY")
 	c.AppSheetAppId = get("APPSHEET_APP_ID")
@@ -41,6 +44,9 @@ func newConfig() *config {
 	}
 	if url := get("APPSHEET_BASE_URL"); url != "" {
 		c.AppSheetBaseUrl = url
+	}
+	if logLevel := get("LOG_LEVEL"); logLevel != "" {
+		c.LogLevel = logLevel
 	}
 
 	return c
@@ -54,10 +60,12 @@ func (c *config) registerConfigFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.AppSheetApiKey, "appsheet-key", c.AppSheetApiKey, "AppSheet API Key")
 	fs.StringVar(&c.AppSheetAppId, "appsheet-id", c.AppSheetAppId, "AppSheet App ID")
 	fs.StringVar(&c.AppSheetBaseUrl, "appsheet-url", c.AppSheetBaseUrl, "AppSheet Base URL")
+	fs.BoolVar(&c.Verbose, "verbose", c.Verbose, "Enable verbose debug logging")
 }
 
 // validate checks if the final configuration (after Env and Flags) is valid.
 func (c *config) validate() error {
+	// checking required config values
 	var missing []string
 	if c.GeminiApiKey == "" {
 		missing = append(missing, "Gemini API Key")
@@ -72,6 +80,15 @@ func (c *config) validate() error {
 	if len(missing) > 0 {
 		return fmt.Errorf("missing required configuration: %v. \nSet via environment variables (INVOICE_CATEGORIZER_...) or CLI flags", missing)
 	}
+
+	// validate loglevel
+	switch c.LogLevel {
+	case "debug", "info", "error":
+		// valid
+	default:
+		return fmt.Errorf("invalid log level: %s. \nIt must be one of [\"debug\" \"info\" \"error\"] set via environment variable (INVOICE_CATEGORIZER_LOG_LEVEL) or CLI flag --verbose", c.LogLevel)
+	}
+
 	return nil
 }
 

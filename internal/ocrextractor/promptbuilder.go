@@ -3,6 +3,7 @@ package ocrextractor
 import (
 	"embed"
 	"fmt"
+	"log/slog"
 	"strings"
 	"text/template"
 
@@ -32,6 +33,12 @@ func init() {
 // buildOCRPrompt constructs the prompt for the receipt extraction.
 // It combines the static text instructions with the dynamic image data.
 func (pb *promptBuilder) buildOCRPrompt(image *domain.ImageSource) (llm.Prompt, error) {
+
+	slog.Debug("Building OCR prompt",
+		"image_format", image.Format,
+		"image_size_bytes", len(image.Data),
+	)
+
 	// 1. Render the System Instruction
 	systemInstruction, err := pb.render("system_instructions.tmpl", nil)
 	if err != nil {

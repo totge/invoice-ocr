@@ -45,36 +45,8 @@ func printUsage() {
 	fmt.Println("Usage: categorizer <command> [flags]")
 	fmt.Println("")
 	fmt.Println("Commands:")
-	// --file <path_to_file>
 	fmt.Println("\tprocess\tProcess an input json file and save the result to a file or AppSheet")
 	fmt.Println("\textract\tExtract data from receipt image in astructured format and save the result to a file")
 
 	fmt.Println("\thelp\tShow this help message")
 }
-
-// func handleProcessCommand(args []string) {
-// 	processCmd := flag.NewFlagSet("process", flag.ExitOnError)
-
-// 	sourceType := processCmd.String("source", "file", "Type of the source, possible values: file")
-
-// 	processCmd.Parse(args)
-
-// 	switch *sourceType {
-// 	case "file":
-// 		fmt.Println("Load file input reader")
-
-// 		if processCmd.NArg() != 1 {
-// 			fmt.Printf("process command accepts exectly one file path, you passed %d\n", processCmd.NArg())
-// 			os.Exit(1)
-// 		}
-// 		fmt.Printf("file path provided: %s\n", processCmd.Args()[0])
-// 	// case "another":
-// 	//  handleAnotherCommand(args)
-
-// 	default:
-// 		fmt.Fprintf(os.Stderr, "Error: Unknown source type '%s'\n\n", *sourceType)
-// 		printUsage()
-// 		os.Exit(1)
-// 	}
-
-// }

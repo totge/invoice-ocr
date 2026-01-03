@@ -3,6 +3,7 @@ package llmcategorizer
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/domain"
@@ -28,6 +29,9 @@ func New(client llm.Client, modelName string) *Categorizer {
 // Categorize is the high-level public method. It orchestrates the multi-stage
 // process by delegating to private methods and then assembles the final result.
 func (c *Categorizer) Categorize(ctx context.Context, receipt *domain.Receipt, products []domain.ProductClassification) (*domain.CategorizedReceipt, error) {
+
+	slog.Debug("Categorizer started", "receipt_items", len(receipt.Items), "catalog_size", len(products))
+
 	// 1. Data Preparation: A quick pre-processing step to make lookups easier.
 	productsByCostGroup, allCostGroups := c.prepareProductData(products)
 
@@ -46,7 +50,11 @@ func (c *Categorizer) Categorize(ctx context.Context, receipt *domain.Receipt, p
 	}
 
 	// 4. Perform the final, simple assembly.
-	return c.buildFinalReceipt(receipt, finalMappings), nil
+	result := c.buildFinalReceipt(receipt, finalMappings)
+
+	slog.Info("Categorization complete", "successfully_mapped", len(finalMappings), "total_items", len(receipt.Items))
+
+	return result, nil
 }
 
 // --- Private Helper Methods for Final Assembly ---
