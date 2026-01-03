@@ -23,7 +23,7 @@ func Extract(ctx context.Context, reader ReceiptImageReader, extractor Extractor
 	}
 	slog.Info("Extraction successful",
 		"timestamp", receipt.Timestamp,
-		"total", receipt.ParsedTotal,
+		"parsed_total", receipt.ParsedTotal,
 		"items_found", len(receipt.Items),
 	)
 
