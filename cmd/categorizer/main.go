@@ -21,10 +21,12 @@ func main() {
 
 	var err error
 	switch command {
-	case "process":
-		err = cli.RunProcessCommand(args)
+	case "categorize":
+		err = cli.RunCategorizeCommand(args)
 	case "extract":
 		err = cli.RunExtractCommand(args)
+	case "process":
+		err = cli.RunProcessCommand(args)
 	case "help", "--help", "-h":
 		printUsage()
 	default:
@@ -45,8 +47,9 @@ func printUsage() {
 	fmt.Println("Usage: categorizer <command> [flags]")
 	fmt.Println("")
 	fmt.Println("Commands:")
-	fmt.Println("\tprocess\tProcess an input json file and save the result to a file or AppSheet")
+	fmt.Println("\tcategorize\tCategorize an input json file and save the result to a file or AppSheet")
 	fmt.Println("\textract\tExtract data from receipt image in astructured format and save the result to a file")
+	fmt.Println("\tprocess\tRun end-to-end process (extraction + categorization)")
 
 	fmt.Println("\thelp\tShow this help message")
 }
