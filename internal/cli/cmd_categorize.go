@@ -18,33 +18,33 @@ import (
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/llmcategorizer"
 )
 
-type categorizeOptions struct {
+type categorizeCommand struct {
 	baseConfig
 	InputPath    string
 	OutputTarget string
 	OutputPath   string
 }
 
-// Ensure extractCommand satisfies the command interface.
-var _ command = (*categorizeOptions)(nil)
+// Ensure categorizeCommand satisfies the command interface.
+var _ command = (*categorizeCommand)(nil)
 
-func (c *categorizeOptions) GetName() string {
+func (c *categorizeCommand) GetName() string {
 	return "categorize"
 }
 
-func (c *categorizeOptions) SetDefaults() {
+func (c *categorizeCommand) SetDefaults() {
 	c.InputPath = ""
 	c.OutputTarget = "file"
 	c.OutputPath = "output.json"
 }
 
-func (c *categorizeOptions) RegisterFlags(fs *flag.FlagSet) {
+func (c *categorizeCommand) RegisterFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.InputPath, "input", c.InputPath, "Path to the input receipt file (JSON)")
 	fs.StringVar(&c.OutputTarget, "target", c.OutputTarget, "Output target: 'file' or 'appsheet'")
 	fs.StringVar(&c.OutputPath, "output", c.OutputPath, "Output file path (only used if target is 'file')")
 }
 
-func (c *categorizeOptions) ValidateOptions() error {
+func (c *categorizeCommand) ValidateOptions() error {
 
 	if c.InputPath == "" {
 		return fmt.Errorf("--input is required")
@@ -83,7 +83,7 @@ func (c *categorizeOptions) ValidateOptions() error {
 // args: os.Args[2:] (arguments after 'categorize')
 func RunCategorizeCommand(args []string) error {
 	// 1. Initialize and load command options
-	var options categorizeOptions
+	var options categorizeCommand
 	err := parseCommandOptions(&options, args)
 	if err != nil {
 		return fmt.Errorf("failed running 'extract' command: %w", err)
