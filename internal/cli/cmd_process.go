@@ -1,9 +1,22 @@
 package cli
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
+	"time"
+
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheetcatalog"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheetwriter"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/geminiclient"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/imagereader"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/jsonfilewriter"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/llmcategorizer"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/ocrextractor"
 )
 
 type processCommand struct {
@@ -62,6 +75,74 @@ func (p *processCommand) ValidateOptions() error {
 		if p.InputPath == p.OutputPath {
 			return fmt.Errorf("--input and --output paths cannot be the same")
 		}
+	}
+
+	return nil
+}
+
+func RunProcessCommand(args []string) error {
+	// 1. Initialize and load command options
+	var options processCommand
+	err := parseCommandOptions(&options, args)
+	if err != nil {
+		return fmt.Errorf("failed running 'extract' command: %w", err)
+	}
+
+	slog.Debug("Categorize command configuration",
+		"input", options.InputPath,
+		"target", options.OutputTarget,
+		"output", options.OutputPath,
+	)
+
+	// 2. Setup Context (Cancellation)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	// 3. Construct Dependencies
+
+	// initialize input reader
+	reader := imagereader.NewReader(options.InputPath)
+
+	// initialize llm client
+	llmClient, err := geminiclient.New(ctx, options.GetConfig().GeminiApiKey)
+	if err != nil {
+		return fmt.Errorf("failed to initialize Gemini client: %w", err)
+	}
+
+	// initialize extractor
+	extractor := ocrextractor.New(llmClient, options.GetConfig().GeminiModel)
+
+	// initialize catalog
+	appsheetClient, err := appsheet.NewClient(options.GetConfig().AppSheetBaseUrl, options.GetConfig().AppSheetAppId, options.GetConfig().AppSheetApiKey)
+	if err != nil {
+		return fmt.Errorf("failed to initialize Appsheet client: %w", err)
+	}
+
+	lister := appsheetcatalog.New(appsheetClient)
+
+	// initialize categorizer
+	categorizer := llmcategorizer.New(llmClient, options.GetConfig().GeminiModel)
+
+	// initialize result writer
+	var writer app.ResultWriter
+	switch options.OutputTarget {
+	case "file":
+		w, err := jsonfilewriter.New(options.OutputPath)
+		if err != nil {
+			return err
+		}
+
+		writer = w
+	case "appsheet":
+		writer = appsheetwriter.New(appsheetClient)
+
+	default:
+		return fmt.Errorf("unknown target: %s", options.OutputTarget)
+	}
+
+	// 4. Run App Logic
+	if err := app.Process(ctx, reader, extractor, lister, categorizer, writer); err != nil {
+		return err
 	}
 
 	return nil
