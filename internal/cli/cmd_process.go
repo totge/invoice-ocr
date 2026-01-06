@@ -18,7 +18,7 @@ import (
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/llmcategorizer"
 )
 
-type processOptions struct {
+type categorizeOptions struct {
 	baseConfig
 	InputPath    string
 	OutputTarget string
@@ -26,52 +26,52 @@ type processOptions struct {
 }
 
 // Ensure extractCommand satisfies the command interface.
-var _ command = (*processOptions)(nil)
+var _ command = (*categorizeOptions)(nil)
 
-func (p *processOptions) GetName() string {
-	return "process"
+func (c *categorizeOptions) GetName() string {
+	return "categorize"
 }
 
-func (p *processOptions) SetDefaults() {
-	p.InputPath = ""
-	p.OutputTarget = "file"
-	p.OutputPath = "output.json"
+func (c *categorizeOptions) SetDefaults() {
+	c.InputPath = ""
+	c.OutputTarget = "file"
+	c.OutputPath = "output.json"
 }
 
-func (p *processOptions) RegisterFlags(fs *flag.FlagSet) {
-	fs.StringVar(&p.InputPath, "input", p.InputPath, "Path to the input receipt file (JSON)")
-	fs.StringVar(&p.OutputTarget, "target", p.OutputTarget, "Output target: 'file' or 'appsheet'")
-	fs.StringVar(&p.OutputPath, "output", p.OutputPath, "Output file path (only used if target is 'file')")
+func (c *categorizeOptions) RegisterFlags(fs *flag.FlagSet) {
+	fs.StringVar(&c.InputPath, "input", c.InputPath, "Path to the input receipt file (JSON)")
+	fs.StringVar(&c.OutputTarget, "target", c.OutputTarget, "Output target: 'file' or 'appsheet'")
+	fs.StringVar(&c.OutputPath, "output", c.OutputPath, "Output file path (only used if target is 'file')")
 }
 
-func (p *processOptions) ValidateOptions() error {
+func (c *categorizeOptions) ValidateOptions() error {
 
-	if p.InputPath == "" {
+	if c.InputPath == "" {
 		return fmt.Errorf("--input is required")
 	}
 
-	if info, err := os.Stat(p.InputPath); os.IsNotExist(err) {
-		return fmt.Errorf("input file does not exist: %s", p.InputPath)
+	if info, err := os.Stat(c.InputPath); os.IsNotExist(err) {
+		return fmt.Errorf("input file does not exist: %s", c.InputPath)
 	} else if info.IsDir() {
-		return fmt.Errorf("input path is a directory: %s", p.InputPath)
+		return fmt.Errorf("input path is a directory: %s", c.InputPath)
 	} else if err != nil {
-		return fmt.Errorf("failed to check input file %s: %w", p.InputPath, err)
+		return fmt.Errorf("failed to check input file %s: %w", c.InputPath, err)
 	}
 
 	// validate target type
-	switch p.OutputTarget {
+	switch c.OutputTarget {
 	case "file", "appsheet": // , "terminal" to be added later
 		// Valid
 	default:
-		return fmt.Errorf("invalid target '%s'. Must be 'file', 'appsheet', or 'terminal'", p.OutputTarget)
+		return fmt.Errorf("invalid target '%s'. Must be 'file', 'appsheet', or 'terminal'", c.OutputTarget)
 	}
 
 	// validate output path (for file target)
-	if p.OutputTarget == "file" {
-		if p.OutputPath == "" {
+	if c.OutputTarget == "file" {
+		if c.OutputPath == "" {
 			return fmt.Errorf("--output is required when target is 'file'")
 		}
-		if p.InputPath == p.OutputPath {
+		if c.InputPath == c.OutputPath {
 			return fmt.Errorf("--input and --output paths cannot be the same")
 		}
 	}
@@ -79,17 +79,17 @@ func (p *processOptions) ValidateOptions() error {
 	return nil
 }
 
-// RunProcessCommand handles the 'process' CLI command.
-// args: os.Args[2:] (arguments after 'process')
-func RunProcessCommand(args []string) error {
+// RunCategorizeCommand handles the 'categorize' CLI command.
+// args: os.Args[2:] (arguments after 'categorize')
+func RunCategorizeCommand(args []string) error {
 	// 1. Initialize and load command options
-	var options processOptions
+	var options categorizeOptions
 	err := parseCommandOptions(&options, args)
 	if err != nil {
 		return fmt.Errorf("failed running 'extract' command: %w", err)
 	}
 
-	slog.Debug("Process command configuration",
+	slog.Debug("Categorize command configuration",
 		"input", options.InputPath,
 		"target", options.OutputTarget,
 		"output", options.OutputPath,
