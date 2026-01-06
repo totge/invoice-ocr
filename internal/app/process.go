@@ -6,7 +6,7 @@ import (
 	"log/slog"
 )
 
-func Process(ctx context.Context, inputReader ReceiptReader, productCatalog ProductLister, catAssigner Categorizer, writer ResultWriter) error {
+func Categorize(ctx context.Context, inputReader ReceiptReader, productCatalog ProductLister, catAssigner Categorizer, writer ResultWriter) error {
 
 	slog.Info("Starting receipt categorization pipeline")
 

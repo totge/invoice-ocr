@@ -138,7 +138,7 @@ func RunProcessCommand(args []string) error {
 
 	// 4. Run App Logic
 	// fmt.Printf("Processing %s -> %s...\n", *inputPath, *outputTarget)
-	if err := app.Process(ctx, reader, lister, categorizer, writer); err != nil {
+	if err := app.Categorize(ctx, reader, lister, categorizer, writer); err != nil {
 		return err
 	}
 
