@@ -1,5 +1,15 @@
 package domain
 
+import "time"
+
+type SourceInfo struct {
+	Name      string // Display name (e.g. "receipt_001.jpg")
+	Reference string // ID of file that could be passed to --input (e.g. "/tmp/receipts/receipt_001.jpg")
+	Extension string
+	Size      int64
+	ModTime   time.Time
+}
+
 type ImageSource struct {
 	Format string
 	Data   []byte
