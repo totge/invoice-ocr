@@ -24,9 +24,16 @@ type Filter struct {
 }
 
 func New(limit int) *Filter {
-	slog.Debug("Initializing source filter", "limit", limit)
+	sanitizedLimit := limit
+	if limit < 0 {
+		slog.Warn("Received negative limit, treating as unlimited", "limit", limit)
+		sanitizedLimit = 0
+	}
+
+	slog.Debug("Initializing source filter", "limit", sanitizedLimit)
+
 	return &Filter{
-		LimitNumber:      limit,
+		LimitNumber:      sanitizedLimit,
 		SupportedFormats: validExtensions,
 	}
 }
