@@ -27,6 +27,8 @@ func main() {
 		err = cli.RunExtractCommand(args)
 	case "process":
 		err = cli.RunProcessCommand(args)
+	case "list":
+		err = cli.RunlistCommand(args)
 	case "help", "--help", "-h":
 		printUsage()
 	default:
@@ -47,8 +49,9 @@ func printUsage() {
 	fmt.Println("Usage: categorizer <command> [flags]")
 	fmt.Println("")
 	fmt.Println("Commands:")
-	fmt.Println("\tcategorize\tCategorize an input json file and save the result to a file or AppSheet")
+	fmt.Println("\tlist\tList source files from a directory")
 	fmt.Println("\textract\tExtract data from receipt image in astructured format and save the result to a file")
+	fmt.Println("\tcategorize\tCategorize an input json file and save the result to a file or AppSheet")
 	fmt.Println("\tprocess\tRun end-to-end process (extraction + categorization)")
 
 	fmt.Println("\thelp\tShow this help message")
