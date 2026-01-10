@@ -44,6 +44,9 @@ func (l *listCommand) RegisterFlags(fs *flag.FlagSet) {
 }
 
 func (l *listCommand) ValidateOptions() error {
+	if l.Limit < 0 {
+		slog.Warn("--limit must be >0 or 0 (unlimited)", "limit", l.Limit)
+	}
 
 	if l.Path == "" {
 		return fmt.Errorf("--path is required")
