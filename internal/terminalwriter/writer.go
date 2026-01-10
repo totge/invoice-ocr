@@ -44,10 +44,7 @@ func (w *Writer) WriteSourceList(ctx context.Context, sources []domain.SourceInf
 		modTimeStr := src.ModTime.Format(time.DateTime) // Go 1.20+ format: "2006-01-02 15:04:05"
 
 		// Format size human-readably (simple version)
-		sizeStr := fmt.Sprintf("%d B", src.Size)
-		if src.Size > 1024 {
-			sizeStr = fmt.Sprintf("%.1f KB", float64(src.Size)/1024)
-		}
+		sizeStr := w.formatSize(src.Size)
 
 		// Write tab-separated columns
 		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n",
@@ -93,4 +90,29 @@ func (w *Writer) WriteResult(ctx context.Context, receipt *domain.CategorizedRec
 
 	// Flush ensures everything is written to stdout
 	return tw.Flush()
+}
+
+func (w *Writer) formatSize(bytes int64) string {
+	const unit = 1024.0 // Use 1000.0 if you prefer SI units
+	if bytes < int64(unit) {
+		return fmt.Sprintf("%d B", bytes)
+	}
+
+	div := unit
+	exp := 0
+	// Loop until the number is small enough, or we run out of units
+	for n := bytes / int64(unit); n >= int64(unit); n /= int64(unit) {
+		div *= unit
+		exp++
+	}
+
+	// 'K' is index 0 in the suffix list for 1024^1
+	suffixes := []string{"KB", "MB", "GB", "TB"}
+
+	// Safety check for huge numbers
+	if exp >= len(suffixes) {
+		exp = len(suffixes) - 1
+	}
+
+	return fmt.Sprintf("%.1f %s", float64(bytes)/float64(div), suffixes[exp])
 }
