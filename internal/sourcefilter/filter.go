@@ -1,6 +1,7 @@
 package sourcefilter
 
 import (
+	"log/slog"
 	"strings"
 
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
@@ -9,22 +10,37 @@ import (
 
 var _ app.SourceFilter = (*Filter)(nil)
 
+// Supported extensions could be defined here or injected
+var validExtensions = map[string]bool{
+	".json": true,
+	".jpg":  true,
+	".jpeg": true,
+	".png":  true,
+}
+
 type Filter struct {
 	LimitNumber      int
 	SupportedFormats map[string]bool
 }
 
-func New(limit int, supportedExtensions ...string) *Filter {
-	supportedFormats := make(map[string]bool, len(supportedExtensions))
-	for _, format := range supportedExtensions {
-		supportedFormats[format] = true
+func New(limit int) *Filter {
+	slog.Debug("Initializing source filter", "limit", limit)
+	return &Filter{
+		LimitNumber:      limit,
+		SupportedFormats: validExtensions,
 	}
-
-	return &Filter{LimitNumber: limit, SupportedFormats: supportedFormats}
 }
 
 func (f *Filter) Filter(rawList []domain.SourceInfo) []domain.SourceInfo {
+	slog.Debug("Filtering source list", "input_count", len(rawList))
+
 	var filtered []domain.SourceInfo
+
+	var keys []string
+	for k := range f.SupportedFormats {
+		keys = append(keys, k)
+	}
+	slog.Debug("supported formats", "formats", keys)
 
 	// filter for supported file formats
 	for _, item := range rawList {
@@ -34,9 +50,20 @@ func (f *Filter) Filter(rawList []domain.SourceInfo) []domain.SourceInfo {
 		}
 	}
 
+	droppedCount := len(rawList) - len(filtered)
+	slog.Debug("Extension filtering complete",
+		"kept_count", len(filtered),
+		"dropped_count", droppedCount,
+	)
+
 	// limiting output
 	if f.LimitNumber > 0 && len(filtered) > f.LimitNumber {
+		originalCount := len(filtered)
 		filtered = filtered[:f.LimitNumber]
+		slog.Debug("List truncated by limit",
+			"limit", f.LimitNumber,
+			"truncated_items", originalCount-len(filtered),
+		)
 	}
 
 	return filtered
