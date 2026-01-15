@@ -3,11 +3,14 @@ package googledrive
 import (
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/domain"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
@@ -18,6 +21,11 @@ type Source struct {
 	service  *drive.Service
 	targetID string // The File ID or Folder ID this source is bound to
 }
+
+var _ app.SourceLister = (*Source)(nil)
+var _ app.ReceiptImageReader = (*Source)(nil)
+
+// var _ app.ReceiptReader = (*Source)(nil)
 
 func New(ctx context.Context, credentialsPath string, uri string) (*Source, error) {
 	slog.Debug("Initializing Google Drive source", "uri", uri)
@@ -83,6 +91,33 @@ func (s *Source) ListSources(ctx context.Context) ([]domain.SourceInfo, error) {
 
 	slog.Debug("Drive listing complete", "files_found", len(sources))
 	return sources, nil
+}
+
+func (s *Source) ReadReceiptImage(ctx context.Context) (*domain.ImageSource, error) {
+	slog.Debug("Downloading file from Drive", "file_id", s.targetID)
+
+	// 1. Download Content
+	resp, err := s.service.Files.Get(s.targetID).Context(ctx).Download()
+	if err != nil {
+		return nil, fmt.Errorf("failed to download file: %w", err)
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// 2. Detect MIME Type
+	// Verifying MIME type
+	detectedMime := http.DetectContentType(data)
+
+	slog.Debug("Drive download complete", "size_bytes", len(data), "mime_type", detectedMime)
+
+	return &domain.ImageSource{
+		Data:   data,
+		Format: detectedMime,
+	}, nil
 }
 
 // ParseURI extracts the ID from a gdrive://ID string.
