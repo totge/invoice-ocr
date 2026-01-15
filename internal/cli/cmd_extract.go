@@ -10,6 +10,7 @@ import (
 
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/geminiclient"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/googledrive"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/imagereader"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/jsonfilewriter"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/ocrextractor"
@@ -19,6 +20,7 @@ type extractCommand struct {
 	baseConfig
 	InputPath  string
 	OutputPath string
+	Source     string
 }
 
 // Ensure extractCommand satisfies the command interface.
@@ -31,11 +33,13 @@ func (e *extractCommand) GetName() string {
 func (e *extractCommand) SetDefaults() {
 	e.InputPath = ""
 	e.OutputPath = ""
+	e.Source = "local"
 }
 
 func (e *extractCommand) RegisterFlags(fs *flag.FlagSet) {
 	fs.StringVar(&e.InputPath, "input", e.InputPath, "Path to the input receipt image")
 	fs.StringVar(&e.OutputPath, "output", e.OutputPath, "Output file path")
+	fs.StringVar(&e.Source, "source", e.Source, "Source system")
 }
 
 func (e *extractCommand) ValidateOptions() error {
@@ -56,6 +60,14 @@ func (e *extractCommand) ValidateOptions() error {
 		return fmt.Errorf("--output is required")
 	}
 
+	switch e.Source {
+	case "local", "gdrive":
+		// valid sources
+	default:
+		return fmt.Errorf("invalid --source: %s\nit must be one of [local gdrive]", e.Source)
+
+	}
+
 	return nil
 }
 
@@ -70,6 +82,7 @@ func RunExtractCommand(args []string) error {
 	}
 
 	slog.Debug("Extract command configuration",
+		"source", options.Source,
 		"input", options.InputPath,
 		"output", options.OutputPath,
 		"model", options.GetConfig().GeminiModel,
@@ -82,7 +95,17 @@ func RunExtractCommand(args []string) error {
 	// 3. Construct Dependencies
 
 	// initialize input reader
-	reader := imagereader.NewReader(options.InputPath)
+	var reader app.ReceiptImageReader
+	switch options.Source {
+	case "local":
+		reader = imagereader.NewReader(options.InputPath)
+	case "gdrive":
+		reader, err = googledrive.New(ctx, options.GetConfig().GDriveKeyPath, options.InputPath)
+		if err != nil {
+			return fmt.Errorf("failed to initialize Google Drive client: %w", err)
+		}
+
+	}
 
 	// initialize extractor
 	llmClient, err := geminiclient.New(ctx, options.GetConfig().GeminiApiKey)
