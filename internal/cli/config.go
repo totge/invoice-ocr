@@ -15,6 +15,7 @@ type config struct {
 	AppSheetApiKey  string
 	AppSheetAppId   string
 	AppSheetBaseUrl string
+	GDriveKeyPath   string
 	LogLevel        string
 	Verbose         bool
 }
@@ -39,6 +40,7 @@ func newConfig() *config {
 	c.GeminiApiKey = get("GEMINI_API_KEY")
 	c.AppSheetApiKey = get("APPSHEET_API_KEY")
 	c.AppSheetAppId = get("APPSHEET_APP_ID")
+	c.GDriveKeyPath = get("GOOGLE_DRIVE_KEY_PATH")
 	if model := get("GEMINI_MODEL"); model != "" {
 		c.GeminiModel = model
 	}
@@ -60,6 +62,7 @@ func (c *config) registerConfigFlags(fs *flag.FlagSet) {
 	fs.StringVar(&c.AppSheetApiKey, "appsheet-key", c.AppSheetApiKey, "AppSheet API Key")
 	fs.StringVar(&c.AppSheetAppId, "appsheet-id", c.AppSheetAppId, "AppSheet App ID")
 	fs.StringVar(&c.AppSheetBaseUrl, "appsheet-url", c.AppSheetBaseUrl, "AppSheet Base URL")
+	fs.StringVar(&c.GDriveKeyPath, "gdrive-key-path", c.GDriveKeyPath, "Path to Google Drive key")
 	fs.BoolVar(&c.Verbose, "verbose", c.Verbose, "Enable verbose debug logging")
 }
 
