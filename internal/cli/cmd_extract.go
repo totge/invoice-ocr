@@ -48,12 +48,20 @@ func (e *extractCommand) ValidateOptions() error {
 		return fmt.Errorf("--input is required")
 	}
 
-	if info, err := os.Stat(e.InputPath); os.IsNotExist(err) {
-		return fmt.Errorf("input file does not exist: %s", e.InputPath)
-	} else if info.IsDir() {
-		return fmt.Errorf("input path is a directory: %s", e.InputPath)
-	} else if err != nil {
-		return fmt.Errorf("failed to check input file %s: %w", e.InputPath, err)
+	switch e.Source {
+	case "local":
+		if info, err := os.Stat(e.InputPath); os.IsNotExist(err) {
+			return fmt.Errorf("input file does not exist: %s", e.InputPath)
+		} else if info.IsDir() {
+			return fmt.Errorf("input path is a directory: %s", e.InputPath)
+		} else if err != nil {
+			return fmt.Errorf("failed to check input file %s: %w", e.InputPath, err)
+		}
+		
+	case "gdrive":
+		// no preemptive validation
+	default:
+		return fmt.Errorf("invalid --source: %s\nit must be one of [local gdrive]", e.Source)
 	}
 
 	if e.OutputPath == "" {
