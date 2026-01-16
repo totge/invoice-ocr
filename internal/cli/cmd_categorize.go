@@ -101,6 +101,7 @@ func RunCategorizeCommand(args []string) error {
 	}
 
 	slog.Debug("Categorize command configuration",
+		"source", options.Source,
 		"input", options.InputPath,
 		"target", options.OutputTarget,
 		"output", options.OutputPath,
