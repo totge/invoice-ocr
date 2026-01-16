@@ -13,6 +13,7 @@ import (
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheetcatalog"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheetwriter"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/geminiclient"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/googledrive"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/jsonfilereader"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/jsonfilewriter"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/llmcategorizer"
@@ -20,6 +21,7 @@ import (
 
 type categorizeCommand struct {
 	baseConfig
+	Source       string
 	InputPath    string
 	OutputTarget string
 	OutputPath   string
@@ -33,12 +35,14 @@ func (c *categorizeCommand) GetName() string {
 }
 
 func (c *categorizeCommand) SetDefaults() {
+	c.Source = "local"
 	c.InputPath = ""
 	c.OutputTarget = "file"
 	c.OutputPath = "output.json"
 }
 
 func (c *categorizeCommand) RegisterFlags(fs *flag.FlagSet) {
+	fs.StringVar(&c.Source, "source", c.Source, "Source system")
 	fs.StringVar(&c.InputPath, "input", c.InputPath, "Path to the input receipt file (JSON)")
 	fs.StringVar(&c.OutputTarget, "target", c.OutputTarget, "Output target: 'file' or 'appsheet'")
 	fs.StringVar(&c.OutputPath, "output", c.OutputPath, "Output file path (only used if target is 'file')")
@@ -50,12 +54,19 @@ func (c *categorizeCommand) ValidateOptions() error {
 		return fmt.Errorf("--input is required")
 	}
 
-	if info, err := os.Stat(c.InputPath); os.IsNotExist(err) {
-		return fmt.Errorf("input file does not exist: %s", c.InputPath)
-	} else if info.IsDir() {
-		return fmt.Errorf("input path is a directory: %s", c.InputPath)
-	} else if err != nil {
-		return fmt.Errorf("failed to check input file %s: %w", c.InputPath, err)
+	switch c.Source {
+	case "local":
+		if info, err := os.Stat(c.InputPath); os.IsNotExist(err) {
+			return fmt.Errorf("input file does not exist: %s", c.InputPath)
+		} else if info.IsDir() {
+			return fmt.Errorf("input path is a directory: %s", c.InputPath)
+		} else if err != nil {
+			return fmt.Errorf("failed to check input file %s: %w", c.InputPath, err)
+		}
+	case "gdrive":
+		// No preemptive validation
+	default:
+		return fmt.Errorf("invalid source '%s'. Must be 'local' or 'gdrive'", c.OutputTarget)
 	}
 
 	// validate target type
@@ -102,7 +113,16 @@ func RunCategorizeCommand(args []string) error {
 	// 3. Construct Dependencies
 
 	// initialize input reader
-	reader := jsonfilereader.NewReader(options.InputPath)
+	var reader app.ReceiptReader
+	switch options.Source {
+	case "local":
+		reader = jsonfilereader.NewReader(options.InputPath)
+	case "gdrive":
+		reader, err = googledrive.New(ctx, options.GetConfig().GDriveKeyPath, options.InputPath)
+		if err != nil {
+			return fmt.Errorf("failed to initialize Google Drive reader: %w", err)
+		}
+	}
 
 	// initialize catalog
 	appsheetClient, err := appsheet.NewClient(options.GetConfig().AppSheetBaseUrl, options.GetConfig().AppSheetAppId, options.GetConfig().AppSheetApiKey)
