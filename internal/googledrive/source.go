@@ -2,6 +2,7 @@ package googledrive
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -24,8 +25,7 @@ type Source struct {
 
 var _ app.SourceLister = (*Source)(nil)
 var _ app.ReceiptImageReader = (*Source)(nil)
-
-// var _ app.ReceiptReader = (*Source)(nil)
+var _ app.ReceiptReader = (*Source)(nil)
 
 func New(ctx context.Context, credentialsPath string, uri string) (*Source, error) {
 	slog.Debug("Initializing Google Drive source", "uri", uri)
@@ -118,6 +118,44 @@ func (s *Source) ReadReceiptImage(ctx context.Context) (*domain.ImageSource, err
 		Data:   data,
 		Format: detectedMime,
 	}, nil
+}
+
+func (s *Source) ReadReceipt(ctx context.Context) (*domain.Receipt, error) {
+	// 1. Get the stream
+	body, err := s.downloadStream(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer body.Close()
+
+	// 2. Decode JSON directly from the stream
+	var receipt domain.Receipt
+	if err := json.NewDecoder(body).Decode(&receipt); err != nil {
+		return nil, fmt.Errorf("failed to decode receipt JSON from drive: %w", err)
+	}
+
+	slog.Debug("Drive JSON receipt loaded",
+		"item_count", len(receipt.Items),
+		"timestamp", receipt.Timestamp,
+	)
+
+	return &receipt, nil
+}
+
+func (s *Source) downloadStream(ctx context.Context) (io.ReadCloser, error) {
+	slog.Debug("Downloading file stream from Drive", "file_id", s.targetID)
+
+	resp, err := s.service.Files.Get(s.targetID).Context(ctx).Download()
+	if err != nil {
+		return nil, fmt.Errorf("failed to download file %s: %w", s.targetID, err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("drive api returned status %d", resp.StatusCode)
+	}
+
+	return resp.Body, nil
 }
 
 // ParseURI extracts the ID from a gdrive://ID string.
