@@ -13,6 +13,7 @@ import (
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheetcatalog"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheetwriter"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/geminiclient"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/googledrive"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/imagereader"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/jsonfilewriter"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/llmcategorizer"
@@ -21,6 +22,7 @@ import (
 
 type processCommand struct {
 	baseConfig
+	Source       string
 	InputPath    string
 	OutputTarget string
 	OutputPath   string
@@ -34,12 +36,14 @@ func (p *processCommand) GetName() string {
 }
 
 func (p *processCommand) SetDefaults() {
+	p.Source = "local"
 	p.InputPath = ""
 	p.OutputTarget = "file"
 	p.OutputPath = "output.json"
 }
 
 func (p *processCommand) RegisterFlags(fs *flag.FlagSet) {
+	fs.StringVar(&p.Source, "source", p.Source, "Source system: 'local' or 'gdrive'")
 	fs.StringVar(&p.InputPath, "input", p.InputPath, "Path to the input receipt image")
 	fs.StringVar(&p.OutputTarget, "target", p.OutputTarget, "Output target: 'file' or 'appsheet'")
 	fs.StringVar(&p.OutputPath, "output", p.OutputPath, "Output file path (only used if target is 'file')")
@@ -49,6 +53,14 @@ func (p *processCommand) ValidateOptions() error {
 
 	if p.InputPath == "" {
 		return fmt.Errorf("--input is required")
+	}
+
+	// validate source type
+	switch p.Source {
+	case "local", "gdrive": // , "terminal" to be added later
+		// Valid
+	default:
+		return fmt.Errorf("invalid source '%s'. Must be 'local' or 'gdrive'", p.OutputTarget)
 	}
 
 	if info, err := os.Stat(p.InputPath); os.IsNotExist(err) {
@@ -101,7 +113,17 @@ func RunProcessCommand(args []string) error {
 	// 3. Construct Dependencies
 
 	// initialize input reader
-	reader := imagereader.NewReader(options.InputPath)
+	var reader app.ReceiptImageReader
+
+	switch options.Source {
+	case "local":
+		reader = imagereader.NewReader(options.InputPath)
+	case "gdrive":
+		reader, err = googledrive.New(ctx, options.GetConfig().GDriveKeyPath, options.InputPath)
+		if err != nil {
+			return fmt.Errorf("failed to initialize Google Drive reader: %w", err)
+		}
+	}
 
 	// initialize llm client
 	llmClient, err := geminiclient.New(ctx, options.GetConfig().GeminiApiKey)
