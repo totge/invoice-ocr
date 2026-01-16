@@ -57,18 +57,18 @@ func (p *processCommand) ValidateOptions() error {
 
 	// validate source type
 	switch p.Source {
-	case "local", "gdrive": // , "terminal" to be added later
-		// Valid
+	case "local": // , "terminal" to be added later
+		if info, err := os.Stat(p.InputPath); os.IsNotExist(err) {
+			return fmt.Errorf("input file does not exist: %s", p.InputPath)
+		} else if info.IsDir() {
+			return fmt.Errorf("input path is a directory: %s", p.InputPath)
+		} else if err != nil {
+			return fmt.Errorf("failed to check input file %s: %w", p.InputPath, err)
+		}
+	case "gdrive":
+		// No preemptive validation
 	default:
 		return fmt.Errorf("invalid source '%s'. Must be 'local' or 'gdrive'", p.OutputTarget)
-	}
-
-	if info, err := os.Stat(p.InputPath); os.IsNotExist(err) {
-		return fmt.Errorf("input file does not exist: %s", p.InputPath)
-	} else if info.IsDir() {
-		return fmt.Errorf("input path is a directory: %s", p.InputPath)
-	} else if err != nil {
-		return fmt.Errorf("failed to check input file %s: %w", p.InputPath, err)
 	}
 
 	// validate target type
@@ -97,7 +97,7 @@ func RunProcessCommand(args []string) error {
 	var options processCommand
 	err := parseCommandOptions(&options, args)
 	if err != nil {
-		return fmt.Errorf("failed running 'extract' command: %w", err)
+		return fmt.Errorf("failed running 'process' command: %w", err)
 	}
 
 	slog.Debug("Categorize command configuration",
