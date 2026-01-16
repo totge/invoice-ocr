@@ -96,16 +96,17 @@ func (s *Source) ListSources(ctx context.Context) ([]domain.SourceInfo, error) {
 func (s *Source) ReadReceiptImage(ctx context.Context) (*domain.ImageSource, error) {
 	slog.Debug("Downloading file from Drive", "file_id", s.targetID)
 
-	// 1. Download Content
-	resp, err := s.service.Files.Get(s.targetID).Context(ctx).Download()
+	// 1. Get the stream
+	body, err := s.downloadStream(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to download file: %w", err)
+		return nil, err
 	}
-	defer resp.Body.Close()
+	defer body.Close()
 
-	data, err := io.ReadAll(resp.Body)
+	// 2. Read into memory (Images need the full byte slice for the LLM)
+	data, err := io.ReadAll(body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read drive file body: %w", err)
 	}
 
 	// 2. Detect MIME Type
