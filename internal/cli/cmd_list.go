@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/app"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/googledrive"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/localfilelister"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/sourcefilter"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/terminalwriter"
@@ -26,7 +27,7 @@ type listCommand struct {
 var _ command = (*listCommand)(nil)
 
 func (l *listCommand) GetName() string {
-	return "extract"
+	return "list"
 }
 
 func (l *listCommand) SetDefaults() {
@@ -61,8 +62,10 @@ func (l *listCommand) ValidateOptions() error {
 		} else if err != nil {
 			return fmt.Errorf("failed to check input path %s: %w", l.Path, err)
 		}
-	default:
+	case "gdrive":
 		// pass validation for external systems
+	default:
+		return fmt.Errorf("invalid --source: %s\nmust be one of [local gdrive]", l.SourceType)
 	}
 
 	switch l.Target {
@@ -98,7 +101,16 @@ func RunlistCommand(args []string) error {
 	// 3. Construct Dependencies
 
 	// initialize local file lister
-	lister := localfilelister.New(options.Path)
+	var lister app.SourceLister
+	switch options.SourceType {
+	case "local":
+		lister = localfilelister.New(options.Path)
+	case "gdrive":
+		lister, err = googledrive.New(ctx, options.GetConfig().GDriveKeyPath, options.Path)
+		if err != nil {
+			return fmt.Errorf("failed to initialize Google Drive client: %w", err)
+		}
+	}
 
 	// initialize filter for files
 	filter := sourcefilter.New(options.Limit)

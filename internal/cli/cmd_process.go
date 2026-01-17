@@ -13,6 +13,7 @@ import (
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheetcatalog"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheetwriter"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/geminiclient"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/googledrive"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/imagereader"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/jsonfilewriter"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/llmcategorizer"
@@ -21,6 +22,7 @@ import (
 
 type processCommand struct {
 	baseConfig
+	Source       string
 	InputPath    string
 	OutputTarget string
 	OutputPath   string
@@ -34,12 +36,14 @@ func (p *processCommand) GetName() string {
 }
 
 func (p *processCommand) SetDefaults() {
+	p.Source = "local"
 	p.InputPath = ""
 	p.OutputTarget = "file"
 	p.OutputPath = "output.json"
 }
 
 func (p *processCommand) RegisterFlags(fs *flag.FlagSet) {
+	fs.StringVar(&p.Source, "source", p.Source, "Source system: 'local' or 'gdrive'")
 	fs.StringVar(&p.InputPath, "input", p.InputPath, "Path to the input receipt image")
 	fs.StringVar(&p.OutputTarget, "target", p.OutputTarget, "Output target: 'file' or 'appsheet'")
 	fs.StringVar(&p.OutputPath, "output", p.OutputPath, "Output file path (only used if target is 'file')")
@@ -51,12 +55,20 @@ func (p *processCommand) ValidateOptions() error {
 		return fmt.Errorf("--input is required")
 	}
 
-	if info, err := os.Stat(p.InputPath); os.IsNotExist(err) {
-		return fmt.Errorf("input file does not exist: %s", p.InputPath)
-	} else if info.IsDir() {
-		return fmt.Errorf("input path is a directory: %s", p.InputPath)
-	} else if err != nil {
-		return fmt.Errorf("failed to check input file %s: %w", p.InputPath, err)
+	// validate source type
+	switch p.Source {
+	case "local": // , "terminal" to be added later
+		if info, err := os.Stat(p.InputPath); os.IsNotExist(err) {
+			return fmt.Errorf("input file does not exist: %s", p.InputPath)
+		} else if info.IsDir() {
+			return fmt.Errorf("input path is a directory: %s", p.InputPath)
+		} else if err != nil {
+			return fmt.Errorf("failed to check input file %s: %w", p.InputPath, err)
+		}
+	case "gdrive":
+		// No preemptive validation
+	default:
+		return fmt.Errorf("invalid source '%s'. Must be 'local' or 'gdrive'", p.OutputTarget)
 	}
 
 	// validate target type
@@ -85,10 +97,11 @@ func RunProcessCommand(args []string) error {
 	var options processCommand
 	err := parseCommandOptions(&options, args)
 	if err != nil {
-		return fmt.Errorf("failed running 'extract' command: %w", err)
+		return fmt.Errorf("failed running 'process' command: %w", err)
 	}
 
 	slog.Debug("Categorize command configuration",
+		"source", options.Source,
 		"input", options.InputPath,
 		"target", options.OutputTarget,
 		"output", options.OutputPath,
@@ -101,7 +114,17 @@ func RunProcessCommand(args []string) error {
 	// 3. Construct Dependencies
 
 	// initialize input reader
-	reader := imagereader.NewReader(options.InputPath)
+	var reader app.ReceiptImageReader
+
+	switch options.Source {
+	case "local":
+		reader = imagereader.NewReader(options.InputPath)
+	case "gdrive":
+		reader, err = googledrive.New(ctx, options.GetConfig().GDriveKeyPath, options.InputPath)
+		if err != nil {
+			return fmt.Errorf("failed to initialize Google Drive reader: %w", err)
+		}
+	}
 
 	// initialize llm client
 	llmClient, err := geminiclient.New(ctx, options.GetConfig().GeminiApiKey)
