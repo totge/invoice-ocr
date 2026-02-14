@@ -27,10 +27,10 @@ func NewListCmd(v *viper.Viper) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("path", "", "path to source files")
-	cmd.Flags().String("source", "local", "source system: 'local' or 'gdrive'")
-	cmd.Flags().String("target", "terminal", "output target")
-	cmd.Flags().Int("limit", 10, "max number of files to list (0 for unlimited)")
+	cmd.Flags().StringP("source", "s", "local", "input source: 'local' or 'gdrive'")
+	cmd.Flags().StringP("path", "p", "", "path to source directory")
+	cmd.Flags().StringP("target", "t", "terminal", "output target: 'terminal'")
+	cmd.Flags().IntP("limit", "l", 10, "max number of files to list (0 for unlimited)")
 
 	cmd.MarkFlagRequired("path")
 

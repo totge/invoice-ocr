@@ -28,9 +28,9 @@ func NewExtractCmd(v *viper.Viper) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("input", "", "path to the input receipt image")
-	cmd.Flags().String("output", "", "output file path")
-	cmd.Flags().String("source", "local", "source system: 'local' or 'gdrive'")
+	cmd.Flags().StringP("source", "s", "local", "input source: 'local' or 'gdrive'")
+	cmd.Flags().StringP("input", "i", "", "path to the receipt image")
+	cmd.Flags().StringP("output", "o", "", "output file path")
 
 	cmd.MarkFlagRequired("input")
 	cmd.MarkFlagRequired("output")

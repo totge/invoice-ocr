@@ -32,10 +32,10 @@ func NewProcessCmd(v *viper.Viper) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("input", "", "path to the input receipt image")
-	cmd.Flags().String("source", "local", "source system: 'local' or 'gdrive'")
-	cmd.Flags().String("target", "file", "output target: 'file' or 'appsheet'")
-	cmd.Flags().String("output", "output.json", "output file path (used when target is 'file')")
+	cmd.Flags().StringP("source", "s", "local", "input source: 'local' or 'gdrive'")
+	cmd.Flags().StringP("input", "i", "", "path to the receipt image")
+	cmd.Flags().StringP("target", "t", "file", "output target: 'file' or 'appsheet'")
+	cmd.Flags().StringP("output", "o", "output.json", "output file path (used when target is 'file')")
 
 	cmd.MarkFlagRequired("input")
 
