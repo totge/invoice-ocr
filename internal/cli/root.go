@@ -33,7 +33,7 @@ receipts (OCR) and categorize products into different categories.`,
 	// Register Global Flags
 	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./.env)")
 	cmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable debug logging")
-	cmd.PersistentFlags().StringVar(&logLevel, "log-level", "", "set log level")
+	cmd.PersistentFlags().StringVar(&logLevel, "log-level", "", "set log level (debug, info, error)")
 	cmd.PersistentFlags().String("gemini-api-key", "", "Gemini API Key")
 	cmd.PersistentFlags().String("gemini-model", "", "Gemini model")
 	cmd.PersistentFlags().String("appsheet-api-key", "", "AppSheet API Key")
