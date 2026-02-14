@@ -51,8 +51,23 @@ func TestCategorizeOptions_Validate(t *testing.T) {
 		opts := validOpts(t)
 		opts.Source = "gdrive"
 		opts.Input = "some-file-id"
+		opts.GDriveKeyPath = "/path/to/key.json"
 		if err := opts.Validate(); err != nil {
 			t.Errorf("expected no error, got: %v", err)
+		}
+	})
+
+	t.Run("gdrive missing key path", func(t *testing.T) {
+		opts := validOpts(t)
+		opts.Source = "gdrive"
+		opts.Input = "some-file-id"
+		opts.GDriveKeyPath = ""
+		err := opts.Validate()
+		if err == nil {
+			t.Fatal("expected error for missing gdrive key path")
+		}
+		if !strings.Contains(err.Error(), "google drive key is required") {
+			t.Errorf("expected error about missing gdrive key, got: %v", err)
 		}
 	})
 
