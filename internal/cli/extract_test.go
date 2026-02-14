@@ -34,14 +34,31 @@ func TestExtractOptions_Validate(t *testing.T) {
 
 	t.Run("valid gdrive source", func(t *testing.T) {
 		opts := ExtractOptions{
+			Source:        "gdrive",
+			Input:         "some-file-id",
+			Output:        "out.json",
+			GeminiAPIKey:  "test-key",
+			GeminiModel:   "gemini-2.0-flash",
+			GDriveKeyPath: "/path/to/key.json",
+		}
+		if err := opts.Validate(); err != nil {
+			t.Errorf("expected no error, got: %v", err)
+		}
+	})
+
+	t.Run("gdrive missing key path", func(t *testing.T) {
+		opts := ExtractOptions{
 			Source:       "gdrive",
 			Input:        "some-file-id",
 			Output:       "out.json",
 			GeminiAPIKey: "test-key",
-			GeminiModel:  "gemini-2.0-flash",
 		}
-		if err := opts.Validate(); err != nil {
-			t.Errorf("expected no error, got: %v", err)
+		err := opts.Validate()
+		if err == nil {
+			t.Fatal("expected error for missing gdrive key path")
+		}
+		if !strings.Contains(err.Error(), "google drive key is required") {
+			t.Errorf("expected error about missing gdrive key, got: %v", err)
 		}
 	})
 
@@ -95,10 +112,11 @@ func TestExtractOptions_Validate(t *testing.T) {
 
 	t.Run("missing gemini API key", func(t *testing.T) {
 		opts := ExtractOptions{
-			Source:       "gdrive",
-			Input:        "some-id",
-			Output:       "out.json",
-			GeminiAPIKey: "",
+			Source:        "gdrive",
+			Input:         "some-id",
+			Output:        "out.json",
+			GeminiAPIKey:  "",
+			GDriveKeyPath: "/path/to/key.json",
 		}
 		err := opts.Validate()
 		if err == nil {
@@ -111,11 +129,12 @@ func TestExtractOptions_Validate(t *testing.T) {
 
 	t.Run("gemini model defaults when empty", func(t *testing.T) {
 		opts := ExtractOptions{
-			Source:       "gdrive",
-			Input:        "some-id",
-			Output:       "out.json",
-			GeminiAPIKey: "test-key",
-			GeminiModel:  "",
+			Source:        "gdrive",
+			Input:         "some-id",
+			Output:        "out.json",
+			GeminiAPIKey:  "test-key",
+			GeminiModel:   "",
+			GDriveKeyPath: "/path/to/key.json",
 		}
 		if err := opts.Validate(); err != nil {
 			t.Errorf("expected no error, got: %v", err)

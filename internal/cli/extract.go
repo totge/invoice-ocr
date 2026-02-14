@@ -40,7 +40,9 @@ func (o *ExtractOptions) Validate() error {
 			return fmt.Errorf("input path is a directory: %s", o.Input)
 		}
 	case "gdrive":
-		// no preemptive validation
+		if o.GDriveKeyPath == "" {
+			return fmt.Errorf("path to google drive key is required.")
+		}
 	default:
 		return fmt.Errorf("invalid --source: %s (must be 'local' or 'gdrive')", o.Source)
 	}
