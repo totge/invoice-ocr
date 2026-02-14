@@ -8,51 +8,10 @@ import (
 )
 
 func main() {
+	rootCmd := cli.NewRootCmd()
 
-	if len(os.Args) < 2 {
-		printUsage()
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
-	command := os.Args[1] // The first argument after the program name is the command
-
-	// os.Args[2:] will be the arguments for the specific command
-	args := os.Args[2:]
-
-	var err error
-	switch command {
-	case "categorize":
-		err = cli.RunCategorizeCommand(args)
-	case "extract":
-		err = cli.RunExtractCommand(args)
-	case "process":
-		err = cli.RunProcessCommand(args)
-	case "list":
-		err = cli.RunlistCommand(args)
-	case "help", "--help", "-h":
-		printUsage()
-	default:
-		fmt.Fprintf(os.Stderr, "Error: Unknown command '%s'\n\n", command)
-		printUsage()
-		os.Exit(1)
-	}
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-
-}
-
-func printUsage() {
-	fmt.Println("Receip processor usage:")
-	fmt.Println("Usage: categorizer <command> [flags]")
-	fmt.Println("")
-	fmt.Println("Commands:")
-	fmt.Println("\tlist\tList source files from a directory")
-	fmt.Println("\textract\tExtract data from receipt image in astructured format and save the result to a file")
-	fmt.Println("\tcategorize\tCategorize an input json file and save the result to a file or AppSheet")
-	fmt.Println("\tprocess\tRun end-to-end process (extraction + categorization)")
-
-	fmt.Println("\thelp\tShow this help message")
 }
