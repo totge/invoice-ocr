@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -76,25 +77,22 @@ func setupLogger(logLevel string, isVerbose bool) {
 }
 
 func initConfig(v *viper.Viper, cfgFile string) error {
+	// Load .env file into OS environment. godotenv does not overwrite
+	// existing env vars, so real environment always takes precedence.
 	if cfgFile != "" {
-		v.SetConfigFile(cfgFile)
+		if err := godotenv.Load(cfgFile); err != nil {
+			return fmt.Errorf("error loading config file %s: %w", cfgFile, err)
+		}
 	} else {
-		v.AddConfigPath(".")
-		v.SetConfigName(".env")
-		v.SetConfigType("env")
+		// Ignore error if default .env doesn't exist — env vars may suffice.
+		_ = godotenv.Load()
 	}
 
 	v.SetEnvPrefix("INVOICE_CATEGORIZER")
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	v.AutomaticEnv()
 
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return fmt.Errorf("error reading config file: %w", err)
-		}
-	}
-
-	slog.Debug("Config loaded", "file", v.ConfigFileUsed())
+	slog.Debug("Config loaded")
 
 	return nil
 }
