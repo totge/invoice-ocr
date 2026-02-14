@@ -5,7 +5,6 @@ go 1.24.0
 toolchain go1.24.11
 
 require (
-	github.com/joho/godotenv v1.5.1
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
 	google.golang.org/api v0.257.0
