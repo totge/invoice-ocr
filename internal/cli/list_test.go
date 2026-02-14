@@ -33,10 +33,11 @@ func TestListOptions_Validate(t *testing.T) {
 
 	t.Run("valid gdrive source", func(t *testing.T) {
 		opts := ListOptions{
-			Source: "gdrive",
-			Path:   "some-folder-id",
-			Target: "terminal",
-			Limit:  10,
+			Source:        "gdrive",
+			Path:          "some-folder-id",
+			Target:        "terminal",
+			Limit:         10,
+			GDriveKeyPath: "/path/to/key.json",
 		}
 		if err := opts.Validate(); err != nil {
 			t.Errorf("expected no error, got: %v", err)
