@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -24,7 +24,6 @@ func NewRootCmd() *cobra.Command {
 		Short: "A tool to categorize receipts using AI",
 		Long: `Categorizer is a CLI tool that uses an LLM to extract data from
 receipts (OCR) and categorize products into different categories.`,
-		// PersistentPreRunE runs AFTER flags are parsed but BEFORE the subcommand runs.
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			setupLogger(logLevel, verbose)
 			return initConfig(v, cfgFile)
@@ -42,7 +41,6 @@ receipts (OCR) and categorize products into different categories.`,
 	cmd.PersistentFlags().String("appsheet-base-url", "https://www.appsheet.com", "AppSheet Base URL")
 	cmd.PersistentFlags().String("google-drive-key-path", "", "path to Google Drive key file")
 
-	// Bind flags to viper so they can be read via v.GetString("flag-name")
 	v.BindPFlags(cmd.PersistentFlags())
 
 	// Add Subcommands
@@ -54,7 +52,6 @@ receipts (OCR) and categorize products into different categories.`,
 	return cmd
 }
 
-// setupLogger configures slog with the given level.
 func setupLogger(logLevel string, isVerbose bool) {
 	level := slog.LevelError
 	switch logLevel {
@@ -78,7 +75,6 @@ func setupLogger(logLevel string, isVerbose bool) {
 	slog.SetDefault(logger)
 }
 
-// initConfig loads configuration from .env file and environment variables.
 func initConfig(v *viper.Viper, cfgFile string) error {
 	if cfgFile != "" {
 		v.SetConfigFile(cfgFile)
