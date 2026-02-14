@@ -46,7 +46,7 @@ receipts (OCR) and categorize products into different categories.`,
 	v.BindPFlags(cmd.PersistentFlags())
 
 	// Add Subcommands
-	// cmd.AddCommand(NewExtractCmd(v))
+	cmd.AddCommand(NewExtractCmd(v))
 	// cmd.AddCommand(NewProcessCmd(v))
 	// cmd.AddCommand(NewCategorizeCmd(v))
 	// cmd.AddCommand(NewListCmd(v))
