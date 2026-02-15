@@ -102,7 +102,7 @@ func (c *Client) buildRequestBody(action appSheetAction, data any) (*bytes.Buffe
 func (c *Client) ReadExpenses(ctx context.Context) ([]Expense, error) {
 	var expenses []Expense
 
-	err := c.doRequest(ctx, TableExpenses, actionFind, nil, &expenses)
+	err := c.doRequest(ctx, tableExpenses, actionFind, nil, &expenses)
 	if err != nil {
 		return nil, fmt.Errorf("could not read expenses from appsheet: %w", err)
 	}
@@ -114,7 +114,7 @@ func (c *Client) ReadExpenses(ctx context.Context) ([]Expense, error) {
 
 func (c *Client) ReadCategories(ctx context.Context) ([]Category, error) {
 	var categories []Category
-	err := c.doRequest(ctx, TableCategories, actionFind, nil, &categories)
+	err := c.doRequest(ctx, tableCategories, actionFind, nil, &categories)
 	if err != nil {
 		return nil, fmt.Errorf("could not read categories from appsheet: %w", err)
 	}
@@ -128,7 +128,7 @@ func (c *Client) WriteExpenseStage(ctx context.Context, rows []ExpenseStage) err
 
 	slog.Debug("Writing expenses to stage", "count", len(rows))
 
-	err := c.doRequest(ctx, TableExpenseStage, actionAdd, rows, nil)
+	err := c.doRequest(ctx, tableExpenseStage, actionAdd, rows, nil)
 	if err != nil {
 		return fmt.Errorf("could not write expenses to the stage in appsheet: %w", err)
 	}
