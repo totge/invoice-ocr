@@ -12,13 +12,13 @@ import (
 
 // Categorizer is the main struct that implements the app.Categorizer interface.
 type Categorizer struct {
-	client    llm.Client // The agnostic LLM client interface from types.go
+	client    llm.Client
 	modelName string
 }
 
 var _ app.Categorizer = (*Categorizer)(nil)
 
-// New is the constructor for our categorizer.
+// Constructor for categorizer.
 func New(client llm.Client, modelName string) *Categorizer {
 	return &Categorizer{
 		client:    client,
