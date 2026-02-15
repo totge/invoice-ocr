@@ -46,8 +46,7 @@ func New(filePath string) (*Writer, error) {
 		return nil, fmt.Errorf("output path %q is not a directory", dir)
 	}
 
-	// A simple way to check for write permissions is to try creating and deleting a temporary file.
-	// This is a very robust check.
+	// check for write permissions by creating and deleting a temporary file.
 	tempFile, err := os.CreateTemp(dir, "permission-check-*.tmp")
 	if err != nil {
 		return nil, fmt.Errorf("no write permissions for output directory %q: %w", dir, err)
