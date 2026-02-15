@@ -72,7 +72,6 @@ func (pb *promptBuilder) buildOCRPrompt(image *domain.ImageSource) (llm.Prompt, 
 	}, nil
 }
 
-// render is the same helper as before
 func (pb *promptBuilder) render(templateName string, data any) (string, error) {
 	tmpl := pb.templates.Lookup(templateName)
 	if tmpl == nil {

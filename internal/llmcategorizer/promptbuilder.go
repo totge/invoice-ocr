@@ -16,7 +16,6 @@ import (
 var promptTemplates embed.FS // Embeds the templates directory content
 
 type promptBuilder struct {
-	// templates is an unexported field, encapsulating the state.
 	templates *template.Template
 }
 
@@ -32,7 +31,6 @@ func init() {
 		},
 		// join function: Allows {{ join .Path " / " }} in templates
 		"join": func(s []string, sep string) string {
-			// Basic protection against nil slice if needed
 			if s == nil {
 				return ""
 			}
@@ -41,7 +39,6 @@ func init() {
 	}
 
 	var err error
-	// var parsedTemplates *template.Template
 
 	// Create a new template, add helper functions, then parse all embedded files matching the pattern.
 	parsedTemplates, err := template.New("geminiPrompts"). // Give the template collection a name
@@ -177,7 +174,6 @@ func (pb *promptBuilder) render(templateName string, data any) (string, error) {
 	// Lookup the specific template by its filename.
 	tmpl := pb.templates.Lookup(templateName)
 	if tmpl == nil {
-		// This indicates a developer error
 		return "", fmt.Errorf("template %q not found", templateName)
 	}
 

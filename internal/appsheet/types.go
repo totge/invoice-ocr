@@ -21,10 +21,9 @@ const (
 	// actionAdd instructs the API to add records.
 	actionAdd appSheetAction = "Add"
 
-	//TODO: do not export these - once the old catalog packages is removed
-	TableCategories   appSheetTable = "Kategóriák"
-	TableExpenses     appSheetTable = "Kiadások"
-	TableExpenseStage appSheetTable = "expense_stage"
+	tableCategories   appSheetTable = "Kategóriák"
+	tableExpenses     appSheetTable = "Kiadások"
+	tableExpenseStage appSheetTable = "expense_stage"
 )
 
 // appSheetActionRequest defines the structure for the body of an AppSheet Action API call.
@@ -35,11 +34,11 @@ type appSheetActionRequest struct {
 }
 
 type Category struct {
-	RowNumber    string `json:"_RowNumber,omitempty"` // Matches "_RowNumber" key
-	CategoryId   string `json:"Kategória ID"`         // Matches "Kategória ID" key
-	CostGroup    string `json:"Költség csoport"`      // Matches "Költség csoport" key
-	MainCategory string `json:"Kategória"`            // Matches "Kategória" key
-	SubCategory  string `json:"Alkategória"`          // Matches "Alkategória" key
+	RowNumber    string `json:"_RowNumber,omitempty"`
+	CategoryId   string `json:"Kategória ID"`
+	CostGroup    string `json:"Költség csoport"`
+	MainCategory string `json:"Kategória"`
+	SubCategory  string `json:"Alkategória"`
 }
 
 type Expense struct {

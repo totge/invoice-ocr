@@ -80,7 +80,7 @@ func (op *OCRPipeline) mapToDomain(raw *rawReceipt) *domain.Receipt {
 		domainItems[i] = domain.Item{
 			ItemName: rItem.Name,
 			Price:    paidPrice,           // The calculated final price
-			Discount: -1 * rItem.Discount, // Store discunt amount as positive integer
+			Discount: -1 * rItem.Discount, // Store discount amount as positive integer
 		}
 	}
 
