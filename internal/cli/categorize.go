@@ -13,6 +13,7 @@ import (
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheet"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheetcatalog"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/appsheetwriter"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/csvcatalog"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/geminiclient"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/googledrive"
 	"github.com/totge/invoice-oc/go_item_categorizer/internal/jsonfilereader"
@@ -26,6 +27,8 @@ type CategorizeOptions struct {
 	Input           string
 	Target          string
 	Output          string
+	Catalog         string
+	CatalogCSVPath  string
 	GeminiAPIKey    string
 	GeminiModel     string
 	GDriveKeyPath   string
@@ -76,11 +79,34 @@ func (o *CategorizeOptions) Validate() error {
 	if o.GeminiModel == "" {
 		o.GeminiModel = "gemini-2.0-flash"
 	}
-	if o.AppSheetAPIKey == "" {
-		return fmt.Errorf("AppSheet API key is required (set INVOICE_CATEGORIZER_APPSHEET_API_KEY or --appsheet-api-key)")
+
+	switch o.Catalog {
+	case "appsheet":
+		// validated below via needsAppSheet
+	case "csv":
+		if o.CatalogCSVPath == "" {
+			return fmt.Errorf("--catalog-csv-path is required when catalog is 'csv'")
+		}
+		info, err := os.Stat(o.CatalogCSVPath)
+		if os.IsNotExist(err) {
+			return fmt.Errorf("catalog CSV file does not exist: %s", o.CatalogCSVPath)
+		} else if err != nil {
+			return fmt.Errorf("failed to check catalog CSV file %s: %w", o.CatalogCSVPath, err)
+		} else if info.IsDir() {
+			return fmt.Errorf("catalog CSV path is a directory: %s", o.CatalogCSVPath)
+		}
+	default:
+		return fmt.Errorf("invalid --catalog: %s (must be 'appsheet' or 'csv')", o.Catalog)
 	}
-	if o.AppSheetAppID == "" {
-		return fmt.Errorf("AppSheet App ID is required (set INVOICE_CATEGORIZER_APPSHEET_APP_ID or --appsheet-app-id)")
+
+	needsAppSheet := o.Catalog == "appsheet" || o.Target == "appsheet"
+	if needsAppSheet {
+		if o.AppSheetAPIKey == "" {
+			return fmt.Errorf("AppSheet API key is required (set INVOICE_CATEGORIZER_APPSHEET_API_KEY or --appsheet-api-key)")
+		}
+		if o.AppSheetAppID == "" {
+			return fmt.Errorf("AppSheet App ID is required (set INVOICE_CATEGORIZER_APPSHEET_APP_ID or --appsheet-app-id)")
+		}
 	}
 
 	return nil
@@ -97,6 +123,8 @@ func newCategorizeOptions(cmd *cobra.Command, v *viper.Viper) CategorizeOptions 
 		Input:           input,
 		Target:          target,
 		Output:          output,
+		Catalog:         v.GetString("catalog"),
+		CatalogCSVPath:  v.GetString("catalog-csv-path"),
 		GeminiAPIKey:    v.GetString("gemini-api-key"),
 		GeminiModel:     v.GetString("gemini-model"),
 		GDriveKeyPath:   v.GetString("google-drive-key-path"),
@@ -113,6 +141,8 @@ func NewCategorizeCmd(v *viper.Viper) *cobra.Command {
 		Short: "Categorize items from an extracted receipt JSON",
 		Long:  `Categorize reads an already-extracted receipt JSON file and classifies each item using LLM-based categorization.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			v.BindPFlag("catalog", cmd.Flags().Lookup("catalog"))
+			v.BindPFlag("catalog-csv-path", cmd.Flags().Lookup("catalog-csv-path"))
 			return runCategorize(cmd, v)
 		},
 	}
@@ -121,6 +151,8 @@ func NewCategorizeCmd(v *viper.Viper) *cobra.Command {
 	cmd.Flags().StringP("input", "i", "", "path to the extracted receipt JSON")
 	cmd.Flags().StringP("target", "t", "file", "output target: 'file' or 'appsheet'")
 	cmd.Flags().StringP("output", "o", "output.json", "output file path (used when target is 'file')")
+	cmd.Flags().String("catalog", "appsheet", "catalog source: 'appsheet' or 'csv'")
+	cmd.Flags().String("catalog-csv-path", "", "path to catalog CSV file")
 
 	cmd.MarkFlagRequired("input")
 
@@ -158,11 +190,20 @@ func runCategorize(cmd *cobra.Command, v *viper.Viper) error {
 	}
 
 	// Catalog
-	appsheetClient, err := appsheet.NewClient(opts.AppSheetBaseURL, opts.AppSheetAppID, opts.AppSheetAPIKey)
-	if err != nil {
-		return fmt.Errorf("failed to initialize AppSheet client: %w", err)
+	var err error
+	var lister app.ProductLister
+	var appsheetClient *appsheet.Client
+
+	switch opts.Catalog {
+	case "appsheet":
+		appsheetClient, err = appsheet.NewClient(opts.AppSheetBaseURL, opts.AppSheetAppID, opts.AppSheetAPIKey)
+		if err != nil {
+			return fmt.Errorf("failed to initialize AppSheet client: %w", err)
+		}
+		lister = appsheetcatalog.New(appsheetClient)
+	case "csv":
+		lister = csvcatalog.New(opts.CatalogCSVPath)
 	}
-	lister := appsheetcatalog.New(appsheetClient)
 
 	// Categorizer
 	llmClient, err := geminiclient.New(ctx, opts.GeminiAPIKey)
@@ -181,6 +222,12 @@ func runCategorize(cmd *cobra.Command, v *viper.Viper) error {
 		}
 		writer = w
 	case "appsheet":
+		if appsheetClient == nil {
+			appsheetClient, err = appsheet.NewClient(opts.AppSheetBaseURL, opts.AppSheetAppID, opts.AppSheetAPIKey)
+			if err != nil {
+				return fmt.Errorf("failed to initialize AppSheet client: %w", err)
+			}
+		}
 		writer = appsheetwriter.New(appsheetClient)
 	}
 
