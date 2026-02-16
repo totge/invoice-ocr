@@ -25,6 +25,7 @@ func TestCategorizeOptions_Validate(t *testing.T) {
 			Input:          createTempFile(t),
 			Target:         "file",
 			Output:         "output.json",
+			Catalog:        "appsheet",
 			GeminiAPIKey:   "test-key",
 			GeminiModel:    "gemini-2.0-flash",
 			AppSheetAPIKey: "test-appsheet-key",
@@ -189,6 +190,83 @@ func TestCategorizeOptions_Validate(t *testing.T) {
 		}
 		if opts.GeminiModel != "gemini-2.0-flash" {
 			t.Errorf("expected GeminiModel to default to 'gemini-2.0-flash', got: %s", opts.GeminiModel)
+		}
+	})
+
+	t.Run("catalog csv with valid path", func(t *testing.T) {
+		opts := validOpts(t)
+		opts.Catalog = "csv"
+		opts.CatalogCSVPath = createTempFile(t)
+		opts.AppSheetAPIKey = ""
+		opts.AppSheetAppID = ""
+		if err := opts.Validate(); err != nil {
+			t.Errorf("expected no error for csv catalog without appsheet keys, got: %v", err)
+		}
+	})
+
+	t.Run("catalog csv missing path", func(t *testing.T) {
+		opts := validOpts(t)
+		opts.Catalog = "csv"
+		opts.CatalogCSVPath = ""
+		err := opts.Validate()
+		if err == nil {
+			t.Fatal("expected error for missing catalog CSV path")
+		}
+		if !strings.Contains(err.Error(), "--catalog-csv-path is required") {
+			t.Errorf("expected error about missing csv path, got: %v", err)
+		}
+	})
+
+	t.Run("catalog csv path does not exist", func(t *testing.T) {
+		opts := validOpts(t)
+		opts.Catalog = "csv"
+		opts.CatalogCSVPath = "/nonexistent/catalog.csv"
+		err := opts.Validate()
+		if err == nil {
+			t.Fatal("expected error for nonexistent catalog CSV")
+		}
+		if !strings.Contains(err.Error(), "does not exist") {
+			t.Errorf("expected error about file not existing, got: %v", err)
+		}
+	})
+
+	t.Run("catalog csv path is a directory", func(t *testing.T) {
+		opts := validOpts(t)
+		opts.Catalog = "csv"
+		opts.CatalogCSVPath = t.TempDir()
+		err := opts.Validate()
+		if err == nil {
+			t.Fatal("expected error for directory catalog CSV path")
+		}
+		if !strings.Contains(err.Error(), "is a directory") {
+			t.Errorf("expected error about directory, got: %v", err)
+		}
+	})
+
+	t.Run("catalog csv + appsheet target still requires appsheet keys", func(t *testing.T) {
+		opts := validOpts(t)
+		opts.Catalog = "csv"
+		opts.CatalogCSVPath = createTempFile(t)
+		opts.Target = "appsheet"
+		opts.AppSheetAPIKey = ""
+		err := opts.Validate()
+		if err == nil {
+			t.Fatal("expected error for missing AppSheet key with appsheet target")
+		}
+		if !strings.Contains(err.Error(), "AppSheet API key is required") {
+			t.Errorf("expected error about missing AppSheet key, got: %v", err)
+		}
+	})
+
+	t.Run("invalid catalog value", func(t *testing.T) {
+		opts := validOpts(t)
+		opts.Catalog = "database"
+		err := opts.Validate()
+		if err == nil {
+			t.Fatal("expected error for invalid catalog")
+		}
+		if !strings.Contains(err.Error(), "invalid --catalog") {
+			t.Errorf("expected error about invalid catalog, got: %v", err)
 		}
 	})
 }
