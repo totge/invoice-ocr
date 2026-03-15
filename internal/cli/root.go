@@ -1,14 +1,14 @@
 package cli
 
 import (
-	"fmt"
+	"errors"
 	"log/slog"
 	"os"
 	"strings"
 
-	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/config"
 )
 
 // NewRootCmd creates the entry point of the CLI application.
@@ -32,7 +32,7 @@ receipts (OCR) and categorize products into different categories.`,
 	}
 
 	// Register Global Flags
-	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./.env)")
+	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path (default is ~/.invoice_ocr/config.toml)")
 	cmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable debug logging")
 	cmd.PersistentFlags().StringVar(&logLevel, "log-level", "", "set log level (debug, info, error)")
 	cmd.PersistentFlags().String("gemini-api-key", "", "Gemini API Key")
@@ -49,6 +49,7 @@ receipts (OCR) and categorize products into different categories.`,
 	cmd.AddCommand(NewProcessCmd(v))
 	cmd.AddCommand(NewCategorizeCmd(v))
 	cmd.AddCommand(NewListCmd(v))
+	cmd.AddCommand(NewConfigCmd(v))
 
 	return cmd
 }
@@ -76,23 +77,38 @@ func setupLogger(logLevel string, isVerbose bool) {
 	slog.SetDefault(logger)
 }
 
-func initConfig(v *viper.Viper, cfgFile string) error {
-	// Load .env file into OS environment. godotenv does not overwrite
-	// existing env vars, so real environment always takes precedence.
-	if cfgFile != "" {
-		if err := godotenv.Load(cfgFile); err != nil {
-			return fmt.Errorf("error loading config file %s: %w", cfgFile, err)
+func initConfig(v *viper.Viper, cfgPath string) error {
+	// 1. Determine Path
+	if cfgPath == "" {
+		var err error
+		cfgPath, err = config.DefaultConfigPath()
+		if err != nil {
+			return err
 		}
-	} else {
-		// Ignore error if default .env doesn't exist — env vars may suffice.
-		_ = godotenv.Load()
 	}
 
+	// 2. Point Viper to the config file
+	v.SetConfigFile(cfgPath)
+	v.SetConfigType("toml")
+
+	// 3. Configure Environment Variables
 	v.SetEnvPrefix("INVOICE_CATEGORIZER")
-	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	v.AutomaticEnv()
 
-	slog.Debug("Config loaded")
+	// 4. Read the file
+	if err := v.ReadInConfig(); err != nil {
+		// It's perfectly fine if the config file doesn't exist yet!
+		// The user might be relying entirely on flags/env vars.
+		if !errors.Is(err, os.ErrNotExist) {
+			// Only log an error if the file exists but is corrupted/unreadable
+			slog.Warn("Failed to read config file", "error", err)
+		}
+	} else {
+		slog.Debug("Config loaded", "config_file", v.ConfigFileUsed())
+	}
+
+	slog.Debug("Config loaded", "config_file", cfgPath)
 
 	return nil
 }
