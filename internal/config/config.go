@@ -34,7 +34,7 @@ type AppSheetConfig struct {
 }
 
 type GDriveConfig struct {
-	KeyPath string `toml:"key_path" mapstructure:"key_path	"`
+	KeyPath string `toml:"key_path" mapstructure:"key_path"`
 }
 
 type CatalogConfig struct {
@@ -52,33 +52,53 @@ type KeyEntry struct {
 	ViperKey string
 }
 
+// ValidKeys lists all accepted TOML dotted paths for config get/set.
+var ValidKeys = map[string]bool{
+	"ai.gemini_api_key":  true,
+	"ai.gemini_model":    true,
+	"appsheet.api_key":   true,
+	"appsheet.app_id":    true,
+	"appsheet.base_url":  true,
+	"gdrive.key_path":    true,
+	"catalog.type":       true,
+	"catalog.csv_path":   true,
+	"defaults.log_level": true,
+}
+
 func IsValidKey(key string) bool {
-	var validKeys = map[string]bool{
-		"ai.gemini_api_key":  true,
-		"ai.gemini_model":    true,
-		"appsheet.api_key":   true,
-		"appsheet.app_id":    true,
-		"appsheet.base_url":  true,
-		"gdrive.key_path":    true,
-		"catalog.type":       true,
-		"catalog.csv_path":   true,
-		"defaults.log_level": true,
+	return ValidKeys[key]
+}
+
+// FlatMap returns the config values keyed by the flat viper key names
+// used by CLI flags and env vars. This bridges the nested TOML structure
+// to the flat key namespace used everywhere else in the app.
+func (c *Config) FlatMap() map[string]string {
+	return map[string]string{
+		"gemini-api-key":       c.AI.GeminiAPIKey,
+		"gemini-model":         c.AI.GeminiModel,
+		"appsheet-api-key":     c.AppSheet.APIKey,
+		"appsheet-app-id":      c.AppSheet.AppID,
+		"appsheet-base-url":    c.AppSheet.BaseURL,
+		"google-drive-key-path": c.GDrive.KeyPath,
+		"catalog":              c.Catalog.Type,
+		"catalog-csv-path":     c.Catalog.CSVPath,
+		"log-level":            c.Defaults.LogLevel,
+	}
+}
+
+// LoadFromFile reads and unmarshals a TOML config file.
+func LoadFromFile(path string) (*Config, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
 	}
 
-	return validKeys[key]
-} 
-
-// var KeyMapping = []KeyEntry{
-// 	{"ai.gemini_api_key", "gemini-api-key"},
-// 	{"ai.gemini_model", "gemini-model"},
-// 	{"appsheet.api_key", "appsheet-api-key"},
-// 	{"appsheet.app_id", "appsheet-app-id"},
-// 	{"appsheet.base_url", "appsheet-base-url"},
-// 	{"gdrive.key_path", "google-drive-key-path"},
-// 	{"catalog.type", "catalog"},
-// 	{"catalog.csv_path", "catalog-csv-path"},
-// 	{"defaults.log_level", "log-level"},
-// }
+	var cfg Config
+	if err := toml.Unmarshal(data, &cfg); err != nil {
+		return nil, fmt.Errorf("failed to parse config file %s: %w", path, err)
+	}
+	return &cfg, nil
+}
 
 // DefaultConfig returns a Config populated with sensible defaults.
 func DefaultConfig() Config {

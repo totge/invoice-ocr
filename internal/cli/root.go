@@ -87,26 +87,29 @@ func initConfig(v *viper.Viper, cfgPath string) error {
 		}
 	}
 
-	// 2. Point Viper to the config file
+	// 2. Store the path so config subcommands can find it via v.ConfigFileUsed()
 	v.SetConfigFile(cfgPath)
-	v.SetConfigType("toml")
 
-	// 3. Configure Environment Variables
-	v.SetEnvPrefix("INVOICE_CATEGORIZER")
-	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
-	v.AutomaticEnv()
-
-	// 4. Read the file
-	if err := v.ReadInConfig(); err != nil {
-		// It's perfectly fine if the config file doesn't exist yet!
-		// The user might be relying entirely on flags/env vars.
+	// 3. Read the TOML file ourselves (not via viper) to preserve sections,
+	//    then project the values into viper as flat-key defaults.
+	//    This bridges nested TOML keys (ai.gemini_api_key) to the flat keys
+	//    used by flags and env vars (gemini-api-key).
+	cfg, err := config.LoadFromFile(cfgPath)
+	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			// Only log an error if the file exists but is corrupted/unreadable
 			slog.Warn("Failed to read config file", "error", err)
 		}
-	} else {
-		slog.Debug("Config loaded", "config_file", v.ConfigFileUsed())
+		d := config.DefaultConfig()
+		cfg = &d
 	}
+	for key, val := range cfg.FlatMap() {
+		v.SetDefault(key, val)
+	}
+
+	// 4. Configure Environment Variables (flat keys with prefix)
+	v.SetEnvPrefix("INVOICE_CATEGORIZER")
+	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	v.AutomaticEnv()
 
 	slog.Debug("Config loaded", "config_file", cfgPath)
 
