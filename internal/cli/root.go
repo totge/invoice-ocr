@@ -42,6 +42,7 @@ receipts (OCR) and categorize products into different categories.`,
 	cmd.PersistentFlags().String("appsheet-base-url", "https://www.appsheet.com", "AppSheet Base URL")
 	cmd.PersistentFlags().String("google-drive-key-path", "", "path to Google Drive key file")
 
+	// Bind flags to viper
 	v.BindPFlags(cmd.PersistentFlags())
 
 	// Add Subcommands
