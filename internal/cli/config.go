@@ -48,7 +48,7 @@ func newConfigInitCmd() *cobra.Command {
 		RunE:  runConfigInit,
 	}
 
-	cmd.Flags().String("path", "~/.invoice_ocr", "base directory for the config file (default: ~/.invoice_ocr)")
+	cmd.Flags().String("path", "", "base directory for the config file (default: home directory)")
 	cmd.Flags().Bool("force", false, "overwrite existing config file")
 
 	return cmd
@@ -157,23 +157,36 @@ func newConfigListCmd(v *viper.Viper) *cobra.Command {
 }
 
 func runConfigInit(cmd *cobra.Command, args []string) error {
-	// TODO: does this need error handling
-	path, _ := cmd.Flags().GetString("path")
+	basePath, _ := cmd.Flags().GetString("path")
 	force, _ := cmd.Flags().GetBool("force")
 
-	if path == "" {
-		return fmt.Errorf("--path cannot be empty string")
-	}
-
-	// check if config file already exists
-	if !force {
-		if _, err := os.Stat(path); err == nil {
-			return fmt.Errorf("config file already exists: %s (use --force to overwrite)", path)
+	if basePath == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return fmt.Errorf("cannot determine home directory: %w", err)
+		}
+		basePath = home
+	} else {
+		var err error
+		basePath, err = config.ExpandHome(basePath)
+		if err != nil {
+			return err
 		}
 	}
 
-	config.InitConfigFile(path, force)
+	// check if config file already exists
+	filePath := config.ConfigPathIn(basePath)
+	if !force {
+		if _, err := os.Stat(filePath); err == nil {
+			return fmt.Errorf("config file already exists: %s (use --force to overwrite)", filePath)
+		}
+	}
 
+	if err := config.InitConfigFile(basePath); err != nil {
+		return fmt.Errorf("failed to create config file: %w", err)
+	}
+
+	fmt.Fprintf(cmd.OutOrStdout(), "Config file created at %s\n", filePath)
 	return nil
 }
 
