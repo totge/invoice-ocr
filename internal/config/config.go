@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	toml "github.com/pelletier/go-toml/v2"
 )
@@ -115,12 +116,14 @@ func DefaultConfig() Config {
 	}
 }
 
-// Cretes an empty config file with the defaults set
-func InitConfigFile(path string, force bool) error {
-	dir := filepath.Dir(path)
+// InitConfigFile creates a default config file at <baseDir>/.invoice_ocr/config.toml.
+func InitConfigFile(baseDir string) error {
+	dir := filepath.Join(baseDir, configDir)
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("failed to create config directory %s: %w", dir, err)
 	}
+
+	path := filepath.Join(dir, configFile)
 
 	cfg := DefaultConfig()
 
@@ -136,6 +139,18 @@ func InitConfigFile(path string, force bool) error {
 	return nil
 }
 
+// ExpandHome replaces a leading ~ with the user's home directory.
+func ExpandHome(path string) (string, error) {
+	if path == "~" || strings.HasPrefix(path, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("cannot determine home directory: %w", err)
+		}
+		return filepath.Join(home, path[1:]), nil
+	}
+	return path, nil
+}
+
 // DefaultConfigPath returns the default config file path: ~/.invoice_ocr/config.toml.
 func DefaultConfigPath() (string, error) {
 	home, err := os.UserHomeDir()
@@ -143,6 +158,11 @@ func DefaultConfigPath() (string, error) {
 		return "", fmt.Errorf("cannot determine home directory: %w", err)
 	}
 	return filepath.Join(home, configDir, configFile), nil
+}
+
+// ConfigPathIn returns <baseDir>/.invoice_ocr/config.toml.
+func ConfigPathIn(baseDir string) string {
+	return filepath.Join(baseDir, configDir, configFile)
 }
 
 // ---------------------
