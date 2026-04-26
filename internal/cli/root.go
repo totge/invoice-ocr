@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"errors"
 	"log/slog"
 	"os"
 	"strings"
@@ -50,7 +49,7 @@ receipts (OCR) and categorize products into different categories.`,
 	cmd.AddCommand(NewProcessCmd(v))
 	cmd.AddCommand(NewCategorizeCmd(v))
 	cmd.AddCommand(NewListCmd(v))
-	cmd.AddCommand(NewConfigCmd(v))
+	cmd.AddCommand(NewConfigCmd(&cfgFile))
 
 	return cmd
 }
@@ -79,35 +78,21 @@ func setupLogger(logLevel string, isVerbose bool) {
 }
 
 func initConfig(v *viper.Viper, cfgPath string) error {
-	// 1. Determine Path
 	if cfgPath == "" {
 		var err error
-		cfgPath, err = config.DefaultConfigPath()
+		cfgPath, err = defaultConfigPath()
 		if err != nil {
 			return err
 		}
 	}
 
-	// 2. Store the path so config subcommands can find it via v.ConfigFileUsed()
-	v.SetConfigFile(cfgPath)
-
-	// 3. Read the TOML file ourselves (not via viper) to preserve sections,
-	//    then project the values into viper as flat-key defaults.
-	//    This bridges nested TOML keys (ai.gemini_api_key) to the flat keys
-	//    used by flags and env vars (gemini-api-key).
 	cfg, err := config.LoadFromFile(cfgPath)
-	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			slog.Warn("Failed to read config file", "error", err)
+	if err == nil {
+		for key, val := range cfg.FlatMap() {
+			v.SetDefault(key, val)
 		}
-		d := config.DefaultConfig()
-		cfg = &d
-	}
-	for key, val := range cfg.FlatMap() {
-		v.SetDefault(key, val)
 	}
 
-	// 4. Configure Environment Variables (flat keys with prefix)
 	v.SetEnvPrefix("INVOICE_CATEGORIZER")
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	v.AutomaticEnv()
