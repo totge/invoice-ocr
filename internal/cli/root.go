@@ -1,14 +1,13 @@
 package cli
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"strings"
 
-	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/totge/invoice-oc/go_item_categorizer/internal/config"
 )
 
 // NewRootCmd creates the entry point of the CLI application.
@@ -32,7 +31,7 @@ receipts (OCR) and categorize products into different categories.`,
 	}
 
 	// Register Global Flags
-	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./.env)")
+	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path (default is ~/.invoice_ocr/config.toml)")
 	cmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "enable debug logging")
 	cmd.PersistentFlags().StringVar(&logLevel, "log-level", "", "set log level (debug, info, error)")
 	cmd.PersistentFlags().String("gemini-api-key", "", "Gemini API Key")
@@ -42,6 +41,7 @@ receipts (OCR) and categorize products into different categories.`,
 	cmd.PersistentFlags().String("appsheet-base-url", "https://www.appsheet.com", "AppSheet Base URL")
 	cmd.PersistentFlags().String("google-drive-key-path", "", "path to Google Drive key file")
 
+	// Bind flags to viper
 	v.BindPFlags(cmd.PersistentFlags())
 
 	// Add Subcommands
@@ -49,6 +49,7 @@ receipts (OCR) and categorize products into different categories.`,
 	cmd.AddCommand(NewProcessCmd(v))
 	cmd.AddCommand(NewCategorizeCmd(v))
 	cmd.AddCommand(NewListCmd(v))
+	cmd.AddCommand(NewConfigCmd(&cfgFile))
 
 	return cmd
 }
@@ -76,23 +77,27 @@ func setupLogger(logLevel string, isVerbose bool) {
 	slog.SetDefault(logger)
 }
 
-func initConfig(v *viper.Viper, cfgFile string) error {
-	// Load .env file into OS environment. godotenv does not overwrite
-	// existing env vars, so real environment always takes precedence.
-	if cfgFile != "" {
-		if err := godotenv.Load(cfgFile); err != nil {
-			return fmt.Errorf("error loading config file %s: %w", cfgFile, err)
+func initConfig(v *viper.Viper, cfgPath string) error {
+	if cfgPath == "" {
+		var err error
+		cfgPath, err = defaultConfigPath()
+		if err != nil {
+			return err
 		}
-	} else {
-		// Ignore error if default .env doesn't exist — env vars may suffice.
-		_ = godotenv.Load()
+	}
+
+	cfg, err := config.LoadFromFile(cfgPath)
+	if err == nil {
+		for key, val := range cfg.FlatMap() {
+			v.SetDefault(key, val)
+		}
 	}
 
 	v.SetEnvPrefix("INVOICE_CATEGORIZER")
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	v.AutomaticEnv()
 
-	slog.Debug("Config loaded")
+	slog.Debug("Config loaded", "config_file", cfgPath)
 
 	return nil
 }
