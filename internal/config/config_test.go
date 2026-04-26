@@ -6,32 +6,6 @@ import (
 	"testing"
 )
 
-func TestDefaultConfigPath(t *testing.T) {
-	path, err := DefaultConfigPath()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	home, _ := os.UserHomeDir()
-	expected := filepath.Join(home, ".invoice_ocr", "config.toml")
-	if path != expected {
-		t.Errorf("got %s, want %s", path, expected)
-	}
-}
-
-func TestDefaultConfig(t *testing.T) {
-	cfg := DefaultConfig()
-
-	if cfg.AI.GeminiModel != "gemini-2.0-flash" {
-		t.Errorf("GeminiModel = %q, want %q", cfg.AI.GeminiModel, "gemini-2.0-flash")
-	}
-	if cfg.AppSheet.BaseURL != "https://www.appsheet.com" {
-		t.Errorf("BaseURL = %q, want %q", cfg.AppSheet.BaseURL, "https://www.appsheet.com")
-	}
-	if cfg.Catalog.Type != "appsheet" {
-		t.Errorf("Catalog.Type = %q, want %q", cfg.Catalog.Type, "appsheet")
-	}
-}
-
 func writeTOML(t *testing.T, dir, content string) string {
 	t.Helper()
 	path := filepath.Join(dir, "config.toml")
@@ -194,24 +168,171 @@ func TestFlatMap(t *testing.T) {
 	}
 }
 
-func TestIsValidKey(t *testing.T) {
-	valid := []string{
-		"ai.gemini_api_key", "ai.gemini_model",
-		"appsheet.api_key", "appsheet.app_id", "appsheet.base_url",
-		"gdrive.key_path",
-		"catalog.type", "catalog.csv_path",
-		"defaults.log_level",
+func TestGetValue(t *testing.T) {
+	dir := t.TempDir()
+	path := writeTOML(t, dir, `
+[ai]
+gemini_api_key = 'test-key'
+gemini_model = 'gemini-pro'
+`)
+
+	val, err := GetValue(path, "ai.gemini_api_key")
+	if err != nil {
+		t.Fatalf("GetValue error: %v", err)
 	}
-	for _, key := range valid {
-		if !IsValidKey(key) {
-			t.Errorf("IsValidKey(%q) = false, want true", key)
-		}
+	if val != "test-key" {
+		t.Errorf("got %q, want %q", val, "test-key")
+	}
+}
+
+func TestGetValue_InvalidKey(t *testing.T) {
+	dir := t.TempDir()
+	path := writeTOML(t, dir, `[ai]
+gemini_api_key = 'x'
+`)
+
+	_, err := GetValue(path, "unknown.key")
+	if err == nil {
+		t.Fatal("expected error for invalid key")
+	}
+}
+
+func TestGetValue_MissingFile(t *testing.T) {
+	_, err := GetValue("/nonexistent/config.toml", "ai.gemini_api_key")
+	if err == nil {
+		t.Fatal("expected error for missing file")
+	}
+}
+
+func TestSetValue(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+
+	// Init a config file first
+	if err := InitConfigFile(path); err != nil {
+		t.Fatalf("InitConfigFile error: %v", err)
 	}
 
-	invalid := []string{"unknown", "ai.unknown", "gemini-api-key", ""}
-	for _, key := range invalid {
-		if IsValidKey(key) {
-			t.Errorf("IsValidKey(%q) = true, want false", key)
-		}
+	// Set a value
+	if err := SetValue(path, "ai.gemini_api_key", "new-key"); err != nil {
+		t.Fatalf("SetValue error: %v", err)
+	}
+
+	// Read it back
+	val, err := GetValue(path, "ai.gemini_api_key")
+	if err != nil {
+		t.Fatalf("GetValue error: %v", err)
+	}
+	if val != "new-key" {
+		t.Errorf("got %q, want %q", val, "new-key")
+	}
+
+	// Verify other defaults are preserved
+	val, err = GetValue(path, "ai.gemini_model")
+	if err != nil {
+		t.Fatalf("GetValue error: %v", err)
+	}
+	if val != "gemini-2.0-flash" {
+		t.Errorf("default not preserved: got %q, want %q", val, "gemini-2.0-flash")
+	}
+}
+
+func TestSetValue_InvalidKey(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	if err := InitConfigFile(path); err != nil {
+		t.Fatalf("InitConfigFile error: %v", err)
+	}
+
+	err := SetValue(path, "unknown.key", "value")
+	if err == nil {
+		t.Fatal("expected error for invalid key")
+	}
+}
+
+func TestSetValue_CreatesFileIfMissing(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "sub", "config.toml")
+
+	if err := SetValue(path, "ai.gemini_api_key", "created-key"); err != nil {
+		t.Fatalf("SetValue error: %v", err)
+	}
+
+	val, err := GetValue(path, "ai.gemini_api_key")
+	if err != nil {
+		t.Fatalf("GetValue error: %v", err)
+	}
+	if val != "created-key" {
+		t.Errorf("got %q, want %q", val, "created-key")
+	}
+}
+
+func TestListValues(t *testing.T) {
+	dir := t.TempDir()
+	path := writeTOML(t, dir, `
+[ai]
+gemini_api_key = 'k1'
+gemini_model = 'm1'
+
+[appsheet]
+api_key = 'k2'
+app_id = 'a1'
+base_url = 'u1'
+
+[gdrive]
+key_path = 'p1'
+
+[catalog]
+type = 'csv'
+csv_path = 'c1'
+
+[defaults]
+log_level = 'debug'
+`)
+
+	entries, err := ListValues(path)
+	if err != nil {
+		t.Fatalf("ListValues error: %v", err)
+	}
+
+	if len(entries) != 9 {
+		t.Fatalf("got %d entries, want 9", len(entries))
+	}
+
+	// Verify order and values
+	if entries[0].Key != "ai.gemini_api_key" || entries[0].Value != "k1" {
+		t.Errorf("first entry = {%q, %q}, want {%q, %q}", entries[0].Key, entries[0].Value, "ai.gemini_api_key", "k1")
+	}
+	if entries[8].Key != "defaults.log_level" || entries[8].Value != "debug" {
+		t.Errorf("last entry = {%q, %q}, want {%q, %q}", entries[8].Key, entries[8].Value, "defaults.log_level", "debug")
+	}
+}
+
+func TestSaveToFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "nested", "config.toml")
+
+	cfg := defaultConfig()
+	cfg.AI.GeminiAPIKey = "save-test"
+
+	if err := saveToFile(&cfg, path); err != nil {
+		t.Fatalf("saveToFile error: %v", err)
+	}
+
+	loaded, err := LoadFromFile(path)
+	if err != nil {
+		t.Fatalf("LoadFromFile error: %v", err)
+	}
+	if loaded.AI.GeminiAPIKey != "save-test" {
+		t.Errorf("got %q, want %q", loaded.AI.GeminiAPIKey, "save-test")
+	}
+
+	// Verify permissions
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatalf("Stat error: %v", err)
+	}
+	if perm := info.Mode().Perm(); perm != 0600 {
+		t.Errorf("file permissions = %o, want 0600", perm)
 	}
 }
