@@ -44,26 +44,26 @@ log_level = 'debug'
 	}
 
 	checks := map[string]string{
-		"AI.GeminiAPIKey":    cfg.AI.GeminiAPIKey,
-		"AI.GeminiModel":     cfg.AI.GeminiModel,
-		"AppSheet.APIKey":    cfg.AppSheet.APIKey,
-		"AppSheet.AppID":     cfg.AppSheet.AppID,
-		"AppSheet.BaseURL":   cfg.AppSheet.BaseURL,
-		"GDrive.KeyPath":     cfg.GDrive.KeyPath,
-		"Catalog.Type":       cfg.Catalog.Type,
-		"Catalog.CSVPath":    cfg.Catalog.CSVPath,
-		"Defaults.LogLevel":  cfg.Defaults.LogLevel,
+		"AI.GeminiAPIKey":   cfg.AI.GeminiAPIKey,
+		"AI.GeminiModel":    cfg.AI.GeminiModel,
+		"AppSheet.APIKey":   cfg.AppSheet.APIKey,
+		"AppSheet.AppID":    cfg.AppSheet.AppID,
+		"AppSheet.BaseURL":  cfg.AppSheet.BaseURL,
+		"GDrive.KeyPath":    cfg.GDrive.KeyPath,
+		"Catalog.Type":      cfg.Catalog.Type,
+		"Catalog.CSVPath":   cfg.Catalog.CSVPath,
+		"Defaults.LogLevel": cfg.Defaults.LogLevel,
 	}
 	expected := map[string]string{
-		"AI.GeminiAPIKey":    "key-123",
-		"AI.GeminiModel":     "gemini-pro",
-		"AppSheet.APIKey":    "as-key",
-		"AppSheet.AppID":     "as-app",
-		"AppSheet.BaseURL":   "https://custom.appsheet.com",
-		"GDrive.KeyPath":     "/keys/sa.json",
-		"Catalog.Type":       "csv",
-		"Catalog.CSVPath":    "/data/catalog.csv",
-		"Defaults.LogLevel":  "debug",
+		"AI.GeminiAPIKey":   "key-123",
+		"AI.GeminiModel":    "gemini-pro",
+		"AppSheet.APIKey":   "as-key",
+		"AppSheet.AppID":    "as-app",
+		"AppSheet.BaseURL":  "https://custom.appsheet.com",
+		"GDrive.KeyPath":    "/keys/sa.json",
+		"Catalog.Type":      "csv",
+		"Catalog.CSVPath":   "/data/catalog.csv",
+		"Defaults.LogLevel": "debug",
 	}
 
 	for field, got := range checks {
